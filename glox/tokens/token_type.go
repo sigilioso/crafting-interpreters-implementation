@@ -1,4 +1,4 @@
-package main
+package tokens
 
 type TokenType int
 
@@ -53,8 +53,8 @@ const (
 )
 
 var tokenTypeName = map[TokenType]string{
-	LeftParen:  "LEFT_PARENT",
-	RightParen: "RIGHT_PARENT",
+	LeftParen:  "LEFT_PAREN",
+	RightParen: "RIGHT_PAREN",
 	LeftBrace:  "LEFT_BRACE",
 	RightBrace: "RIGHT_BRACE",
 	Comma:      "COMMA",

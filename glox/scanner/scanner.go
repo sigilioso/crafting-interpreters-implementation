@@ -1,8 +1,9 @@
-package main
+package scanner
 
 import (
 	"fmt"
 	"glox/errors"
+	. "glox/tokens"
 	"strconv"
 	"unicode"
 	"unicode/utf8"
@@ -40,7 +41,7 @@ func NewScanner(source string) Scanner {
 	return Scanner{source: source, line: 1}
 }
 
-func (s *Scanner) scanTokens() {
+func (s *Scanner) ScanTokens() {
 
 	for !s.isAtEnd() {
 		s.start = s.current
@@ -69,6 +70,10 @@ func (s *Scanner) scanToken() {
 		s.addNilToken(Semicolon)
 	case '*':
 		s.addNilToken(Star)
+	case '+':
+		s.addNilToken(Plus)
+	case '-':
+		s.addNilToken(Minus)
 
 	case '!':
 		if s.advanceIfMatches('=') {
@@ -222,8 +227,8 @@ func (s *Scanner) handleIdentifier() {
 		s.advance()
 	}
 	text := s.source[s.start:s.current]
-	tokenType, fould := keywords[text]
-	if !fould {
+	tokenType, found := keywords[text]
+	if !found {
 		tokenType = Identifier
 	}
 	s.addNilToken(tokenType)

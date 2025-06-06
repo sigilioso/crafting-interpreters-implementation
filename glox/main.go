@@ -3,6 +3,8 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"glox/errors"
+	"glox/scanner"
 	"os"
 )
 
@@ -26,6 +28,9 @@ func runFile(path string) {
 		os.Exit(64)
 	}
 	run(string(bytes))
+	if errors.ErrorFound() {
+		os.Exit(65)
+	}
 }
 
 func runPrompt() {
@@ -38,14 +43,13 @@ func runPrompt() {
 			os.Exit(64)
 		}
 		run(line)
+		errors.ResetError()
 	}
 
 }
 
 func run(source string) {
-	// TODO: errors
-	scanner := NewScanner(source)
-	scanner.scanTokens()
-	fmt.Println("Tokens:")
+	scanner := scanner.NewScanner(source)
+	scanner.ScanTokens()
 	scanner.PrintTokens()
 }

@@ -19,3 +19,7 @@ func Report(line int, where string, message string) {
 func ErrorFound() bool {
 	return errorFound
 }
+
+func ResetError() {
+	errorFound = false
+}
