@@ -4,11 +4,26 @@ import (
 	"bufio"
 	"fmt"
 	"glox/errors"
+	"glox/expr"
 	"glox/scanner"
+	"glox/tokens"
 	"os"
 )
 
 func main() {
+
+	// chap05 hack
+	expression := expr.Binary[string]{
+		Left: expr.Unary[string]{
+			Operator: tokens.NewToken(tokens.Minus, "-", tokens.NilLiteral, 1),
+			Right:    expr.Literal[string]{Value: 123},
+		},
+		Operator: tokens.NewToken(tokens.Star, "*", tokens.NilLiteral, 1),
+		Right:    expr.Grouping[string]{Expression: expr.Literal[string]{Value: 45.67}},
+	}
+	p := AstPrinter{}
+	fmt.Println(p.Print(expression))
+	os.Exit(0)
 
 	switch len(os.Args) {
 	case 1:

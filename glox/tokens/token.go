@@ -13,29 +13,29 @@ type NilLiteralType struct{}
 func (n NilLiteralType) String() string { return "null" }
 
 type Token struct {
-	kind    TokenType
-	lexeme  string
-	literal any
-	line    int
+	Kind    TokenType
+	Lexeme  string
+	Literal any
+	Line    int
 }
 
 func NewToken(kind TokenType, lexeme string, literal any, line int) Token {
 	return Token{
-		kind:    kind,
-		lexeme:  lexeme,
-		literal: literal,
-		line:    line,
+		Kind:    kind,
+		Lexeme:  lexeme,
+		Literal: literal,
+		Line:    line,
 	}
 }
 
 func (t Token) String() string {
-	if t.kind == Eof {
+	if t.Kind == Eof {
 		return "EOF  null"
 	}
-	if t.kind == Number {
-		return fmt.Sprintf("%v %s %s", t.kind, t.lexeme, formatFloat(t.literal))
+	if t.Kind == Number {
+		return fmt.Sprintf("%v %s %s", t.Kind, t.Lexeme, formatFloat(t.Literal))
 	}
-	return fmt.Sprintf("%v %s %v", t.kind, t.lexeme, t.literal)
+	return fmt.Sprintf("%v %s %v", t.Kind, t.Lexeme, t.Literal)
 }
 
 func formatFloat(v any) string {
