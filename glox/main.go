@@ -4,26 +4,14 @@ import (
 	"bufio"
 	"fmt"
 	"glox/errors"
-	"glox/expr"
+	"glox/parser"
 	"glox/scanner"
-	"glox/tokens"
 	"os"
 )
 
 func main() {
 
-	// chap05 hack
-	expression := expr.Binary[string]{
-		Left: expr.Unary[string]{
-			Operator: tokens.NewToken(tokens.Minus, "-", tokens.NilLiteral, 1),
-			Right:    expr.Literal[string]{Value: 123},
-		},
-		Operator: tokens.NewToken(tokens.Star, "*", tokens.NilLiteral, 1),
-		Right:    expr.Grouping[string]{Expression: expr.Literal[string]{Value: 45.67}},
-	}
-	p := AstPrinter{}
-	fmt.Println(p.Print(expression))
-	os.Exit(0)
+	chap05Hack(false) // switch to true to run chap05 hack only
 
 	switch len(os.Args) {
 	case 1:
@@ -66,5 +54,13 @@ func runPrompt() {
 func run(source string) {
 	scanner := scanner.NewScanner(source)
 	scanner.ScanTokens()
-	scanner.PrintTokens()
+	token_list := scanner.Tokens()
+	// scanner.PrintTokens()
+	parser := parser.NewParser[string](token_list)
+	expression := parser.Parse()
+	if errors.ErrorFound() {
+		return
+	}
+	printer := AstPrinter{}
+	fmt.Println(printer.Print(expression))
 }

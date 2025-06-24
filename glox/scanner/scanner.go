@@ -51,6 +51,10 @@ func (s *Scanner) ScanTokens() {
 	s.tokens = append(s.tokens, NewToken(Eof, "", nil, s.line))
 }
 
+func (s *Scanner) Tokens() []Token {
+	return s.tokens
+}
+
 func (s *Scanner) scanToken() {
 	r := s.advance()
 	switch r {
@@ -119,7 +123,7 @@ func (s *Scanner) scanToken() {
 		} else if unicode.IsLetter(r) || r == '_' {
 			s.handleIdentifier()
 		} else {
-			errors.Error(s.line, "Unexpected character.")
+			errors.AtLine(s.line, "Unexpected character.")
 		}
 	}
 
@@ -194,7 +198,7 @@ func (s *Scanner) handleString() {
 		s.advance()
 	}
 	if s.isAtEnd() {
-		errors.Error(s.line, "Unterminated string.")
+		errors.AtLine(s.line, "Unterminated string.")
 		return
 	}
 
