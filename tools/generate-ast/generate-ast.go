@@ -36,7 +36,7 @@ func defineAst(outputDir string, basename string, types []string) {
 	fmt.Fprintf(&code, "import %q\n", "glox/tokens")
 	fmt.Fprintln(&code)
 	fmt.Fprintf(&code, "type %s[T any] interface {\n", basename)
-	fmt.Fprintln(&code, "Accept(Visitor[T]) T")
+	fmt.Fprintln(&code, "Accept(Visitor[T]) (T, error)")
 	fmt.Fprintln(&code, "}")
 	fmt.Fprintln(&code)
 	for _, typeDef := range types {
@@ -60,7 +60,7 @@ func defineType(code *strings.Builder, typeDef string) {
 	}
 	fmt.Fprintln(code, "}")
 	fmt.Fprintln(code)
-	fmt.Fprintf(code, "func (e %s[T]) Accept(v Visitor[T]) T {\n", name)
+	fmt.Fprintf(code, "func (e %s[T]) Accept(v Visitor[T]) (T, error) {\n", name)
 	fmt.Fprintf(code, "return v.VisitFor%s(e)\n", name)
 	fmt.Fprintln(code, "}")
 
@@ -74,7 +74,7 @@ func defineVisitor(code *strings.Builder, types []string) {
 	for _, typeDef := range types {
 		chunks := strings.Split(typeDef, ":")
 		typeName := strings.TrimSpace(chunks[0])
-		fmt.Fprintf(code, "VisitFor%s(%s[T]) T\n", typeName, typeName)
+		fmt.Fprintf(code, "VisitFor%s(%s[T]) (T, error)\n", typeName, typeName)
 	}
 	fmt.Fprintln(code, "}")
 	fmt.Fprintln(code)

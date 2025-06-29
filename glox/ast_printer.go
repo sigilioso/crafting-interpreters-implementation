@@ -10,37 +10,40 @@ import (
 
 type AstPrinter struct{}
 
-func (p AstPrinter) Print(e expr.Expr[string]) string {
+func (p AstPrinter) Print(e expr.Expr[string]) (string, error) {
 	return e.Accept(p)
 }
 
-func (p AstPrinter) VisitForBinary(e expr.Binary[string]) string {
+func (p AstPrinter) VisitForBinary(e expr.Binary[string]) (string, error) {
 	return p.parenthesize(e.Operator.Lexeme, e.Left, e.Right)
 }
 
-func (p AstPrinter) VisitForGrouping(e expr.Grouping[string]) string {
+func (p AstPrinter) VisitForGrouping(e expr.Grouping[string]) (string, error) {
 	return p.parenthesize("group", e.Expression)
 }
 
-func (p AstPrinter) VisitForLiteral(e expr.Literal[string]) string {
-	// TODO: check nil literals
+func (p AstPrinter) VisitForLiteral(e expr.Literal[string]) (string, error) {
 	if e.Value == tokens.NilLiteral {
-		return "nil"
+		return "nil", nil
 	}
-	return format(e.Value)
+	return format(e.Value), nil
 }
 
-func (p AstPrinter) VisitForUnary(e expr.Unary[string]) string {
+func (p AstPrinter) VisitForUnary(e expr.Unary[string]) (string, error) {
 	return p.parenthesize(e.Operator.Lexeme, e.Right)
 }
 
-func (p AstPrinter) parenthesize(name string, exprs ...expr.Expr[string]) string {
+func (p AstPrinter) parenthesize(name string, exprs ...expr.Expr[string]) (string, error) {
 	s := "(" + name
 	for _, e := range exprs {
-		s += " " + e.Accept(p)
+		v, err := e.Accept(p)
+		if err != nil {
+			return "", err
+		}
+		s += " " + v
 	}
 	s += ")"
-	return s
+	return s, nil
 }
 
 // format performs ugly formatting to match Java implementation used in book's tests

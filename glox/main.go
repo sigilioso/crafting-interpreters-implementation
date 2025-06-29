@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"glox/errors"
+	"glox/interpreter"
 	"glox/parser"
 	"glox/scanner"
 	"os"
@@ -34,6 +35,9 @@ func runFile(path string) {
 	if errors.ErrorFound() {
 		os.Exit(65)
 	}
+	if errors.RuntimeErrorFound() {
+		os.Exit(70)
+	}
 }
 
 func runPrompt() {
@@ -56,11 +60,11 @@ func run(source string) {
 	scanner.ScanTokens()
 	token_list := scanner.Tokens()
 	// scanner.PrintTokens()
-	parser := parser.NewParser[string](token_list)
+	parser := parser.NewParser[any](token_list)
 	expression := parser.Parse()
 	if errors.ErrorFound() {
 		return
 	}
-	printer := AstPrinter{}
-	fmt.Println(printer.Print(expression))
+	loxInterpreter := interpreter.Interpreter{}
+	loxInterpreter.Interpret(expression)
 }

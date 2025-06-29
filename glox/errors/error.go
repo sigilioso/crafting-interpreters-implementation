@@ -9,6 +9,23 @@ import (
 var errorFound = false
 var runtimeErrorFound = false
 
+type RuntimeError struct {
+	token   tokens.Token
+	message string
+}
+
+func (e *RuntimeError) Error() string {
+	return e.message
+}
+
+func (e *RuntimeError) Token() tokens.Token {
+	return e.token
+}
+
+func NewRuntimeError(token tokens.Token, message string) *RuntimeError {
+	return &RuntimeError{token: token, message: message}
+}
+
 func AtLine(line int, message string) {
 	Report(line, "", message)
 }
@@ -26,9 +43,9 @@ func Report(line int, where string, message string) {
 	fmt.Fprintf(os.Stderr, "[line %d] Error %s: %s", line, where, message)
 }
 
-func ReportRuntimeError(token tokens.Token, message string) {
+func ReportRuntimeError(e *RuntimeError) {
 	runtimeErrorFound = true
-	fmt.Fprintf(os.Stderr, "%s\n[line %d]", message, token.Line)
+	fmt.Fprintf(os.Stderr, "%s\n[line %d]", e.message, e.token.Line)
 }
 
 func ErrorFound() bool {
