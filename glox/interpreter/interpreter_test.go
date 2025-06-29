@@ -41,10 +41,7 @@ func TestInterpreter(t *testing.T) {
 		tc := tc
 		t.Run(tc.input, func(t *testing.T) {
 			t.Parallel()
-			scanner := scanner.NewScanner(tc.input)
-			scanner.ScanTokens()
-			parser := parser.NewParser[any](scanner.Tokens())
-			expression := parser.Parse()
+			expression := buildExpression(tc.input)
 
 			i := Interpreter{}
 			result, err := i.interpret(expression)
@@ -52,6 +49,48 @@ func TestInterpreter(t *testing.T) {
 			require.Equal(t, tc.expected, result)
 		})
 	}
+}
+
+func TestInterpreterError(t *testing.T) {
+	cases := []struct {
+		input string
+	}{
+		{
+			input: "\"a\" + 4",
+		},
+		{
+			input: "4 > true",
+		},
+		{
+			input: "1 + 10 * false",
+		},
+		{
+			input: "(1 + \"3\") * 2",
+		},
+		{
+			input: "0 / 0", // Chap07 latest challenge
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.input, func(t *testing.T) {
+			t.Parallel()
+			expression := buildExpression(tc.input)
+			i := Interpreter{}
+			result, err := i.interpret(expression)
+			t.Logf("Result: %v", result)
+			require.Error(t, err)
+		})
+	}
+}
+
+func buildExpression(input string) Expr {
+	scanner := scanner.NewScanner(input)
+	scanner.ScanTokens()
+	parser := parser.NewParser[any](scanner.Tokens())
+	expression := parser.Parse()
+	return expression
 
 }
 

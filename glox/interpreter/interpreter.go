@@ -59,7 +59,7 @@ func (i Interpreter) VisitForBinary(binary Binary) (any, error) {
 	case tokens.Minus:
 		return numOperation(binary.Operator, left, right, func(l, r float64) any { return l - r })
 	case tokens.Slash:
-		return numOperation(binary.Operator, left, right, func(l, r float64) any { return l / r })
+		return divide(binary.Operator, left, right)
 	case tokens.Star:
 		return numOperation(binary.Operator, left, right, func(l, r float64) any { return l * r })
 
@@ -161,6 +161,17 @@ func sum(op tokens.Token, left any, right any) (any, error) {
 	}
 
 	return nil, errors.NewRuntimeError(op, "Operands must be two numbers or two strings.")
+}
+
+func divide(op tokens.Token, left any, right any) (any, error) {
+	l, r, err := asNumbers(op, left, right)
+	if err != nil {
+		return nil, err
+	}
+	if r == .0 {
+		return nil, errors.NewRuntimeError(op, "Cannot divide by zero.")
+	}
+	return l / r, nil
 }
 
 // stringify returns the string representation of the provided value taking care of special cases for nil and numbers.
