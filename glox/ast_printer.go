@@ -33,6 +33,14 @@ func (p AstPrinter) VisitForUnary(e expr.Unary[string]) (string, error) {
 	return p.parenthesize(e.Operator.Lexeme, e.Right)
 }
 
+func (p AstPrinter) VisitForVariable(e expr.Variable[string]) (string, error) {
+	panic("Not implemented")
+}
+
+func (p AstPrinter) VisitForAssign(e expr.Assign[string]) (string, error) {
+	panic("Not implemented")
+}
+
 func (p AstPrinter) parenthesize(name string, exprs ...expr.Expr[string]) (string, error) {
 	s := "(" + name
 	for _, e := range exprs {

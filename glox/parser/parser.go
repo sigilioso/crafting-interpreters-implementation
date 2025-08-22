@@ -4,6 +4,7 @@ import (
 	"errors"
 	gloxErrors "glox/errors"
 	"glox/expr"
+	"glox/stmt"
 	"glox/tokens"
 )
 
@@ -21,16 +22,120 @@ func NewParser[T any](token_list []tokens.Token) Parser[T] {
 	}
 }
 
-func (p *Parser[T]) Parse() expr.Expr[T] {
-	expression, err := p.expression()
-	if err != nil {
-		return nil
+func (p *Parser[T]) Parse() ([]stmt.Stmt[T], error) {
+	statements := []stmt.Stmt[T]{}
+	for !p.isAtEnd() {
+		statement := p.declaration()
+		statements = append(statements, statement)
 	}
-	return expression
+	return statements, nil
 }
 
-func (p *Parser[T]) expression() (expr.Expr[T], error) {
-	return p.equality()
+func (p *Parser[T]) declaration() stmt.Stmt[T] {
+	// Get a varDeclaration when matching a variable, get a regular statement otherwise
+	statementGetter := p.statement
+	if p.match(tokens.Var) {
+		statementGetter = p.varDeclaration
+	}
+	statement, err := statementGetter()
+	if err != nil {
+		// Synchronize if we found any parsing error
+		p.synchronize()
+		return nil
+	}
+	return statement
+}
+
+func (p *Parser[T]) varDeclaration() (stmt.Stmt[T], error) {
+	name, err := p.consume(tokens.Identifier, "Expect variable name.")
+	if err != nil {
+		return nil, err
+	}
+	var initializer expr.Expr[T]
+	if p.match(tokens.Equal) {
+		initializer, err = p.Expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+	if _, err := p.consume(tokens.Semicolon, "Expect ';' after variable declaration."); err != nil {
+		return nil, err
+	}
+	return stmt.Var[T]{Name: name, Initializer: initializer}, nil
+}
+
+func (p *Parser[T]) statement() (stmt.Stmt[T], error) {
+	if p.match(tokens.Print) {
+		return p.printStatement()
+	}
+	if p.match(tokens.LeftBrace) {
+		statements, err := p.block()
+		if err != nil {
+			return nil, err
+		}
+		return stmt.Block[T]{Statements: statements}, nil
+	}
+	return p.expressionStatement()
+}
+
+func (p *Parser[T]) printStatement() (stmt.Stmt[T], error) {
+	value, err := p.Expression()
+	if err != nil {
+		return nil, err
+	}
+	if _, err := p.consume(tokens.Semicolon, "Expect ';' after value."); err != nil {
+		return nil, err
+	}
+	return stmt.Print[T]{Expression: value}, nil
+}
+
+func (p *Parser[T]) expressionStatement() (stmt.Stmt[T], error) {
+	value, err := p.Expression()
+	if err != nil {
+		return nil, err
+	}
+	if _, err := p.consume(tokens.Semicolon, "Expect ';' after value."); err != nil {
+		return nil, err
+	}
+	return stmt.Expression[T]{Expression: value}, nil
+}
+
+func (p *Parser[T]) Expression() (expr.Expr[T], error) {
+	return p.assignment()
+}
+
+func (p *Parser[T]) assignment() (expr.Expr[T], error) {
+	expression, err := p.equality()
+	if err != nil {
+		return nil, err
+	}
+	if p.match(tokens.Equal) {
+		equals := p.previous()
+		value, err := p.assignment()
+		if err != nil {
+			return nil, err
+		}
+
+		if expVar, isVariable := expression.(expr.Variable[T]); isVariable {
+			name := expVar.Name
+			return expr.Assign[T]{Name: name, Value: value}, nil
+		}
+		return nil, parseError(equals, "Invalid assignment target.")
+	}
+	return expression, nil
+}
+
+func (p *Parser[T]) block() ([]stmt.Stmt[T], error) {
+	statements := []stmt.Stmt[T]{}
+	for (!p.check(tokens.RightBrace)) && !p.isAtEnd() {
+		statement := p.declaration()
+		statements = append(statements, statement)
+	}
+	_, err := p.consume(tokens.RightBrace, "Expect '}' after block.")
+	if err != nil {
+		return nil, err
+	}
+	return statements, nil
 }
 
 func (p *Parser[T]) equality() (expr.Expr[T], error) {
@@ -115,13 +220,15 @@ func (p *Parser[T]) primary() (expr.Expr[T], error) {
 		return expr.Literal[T]{Value: false}, nil
 	case p.match(tokens.True):
 		return expr.Literal[T]{Value: true}, nil
+	case p.match(tokens.Identifier):
+		name := p.previous()
+		return expr.Variable[T]{Name: name}, nil
 	case p.match(tokens.Nil):
-
 		return expr.Literal[T]{Value: tokens.NilLiteral}, nil
 	case p.match(tokens.Number, tokens.String):
 		return expr.Literal[T]{Value: p.previous().Literal}, nil
 	case p.match(tokens.LeftParen):
-		expression, err := p.expression()
+		expression, err := p.Expression()
 		if err != nil {
 			return nil, err
 		}

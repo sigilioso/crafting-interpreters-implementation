@@ -7,6 +7,15 @@ type Expr[T any] interface {
 	Accept(Visitor[T]) (T, error)
 }
 
+type Assign[T any] struct {
+	Name  tokens.Token
+	Value Expr[T]
+}
+
+func (e Assign[T]) Accept(v Visitor[T]) (T, error) {
+	return v.VisitForAssign(e)
+}
+
 type Binary[T any] struct {
 	Left     Expr[T]
 	Operator tokens.Token
@@ -42,9 +51,19 @@ func (e Unary[T]) Accept(v Visitor[T]) (T, error) {
 	return v.VisitForUnary(e)
 }
 
+type Variable[T any] struct {
+	Name tokens.Token
+}
+
+func (e Variable[T]) Accept(v Visitor[T]) (T, error) {
+	return v.VisitForVariable(e)
+}
+
 type Visitor[T any] interface {
+	VisitForAssign(Assign[T]) (T, error)
 	VisitForBinary(Binary[T]) (T, error)
 	VisitForGrouping(Grouping[T]) (T, error)
 	VisitForLiteral(Literal[T]) (T, error)
 	VisitForUnary(Unary[T]) (T, error)
+	VisitForVariable(Variable[T]) (T, error)
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestInterpreter(t *testing.T) {
+func TestInterpreterExpressions(t *testing.T) {
 	cases := []struct {
 		input    string
 		expected string
@@ -41,9 +41,9 @@ func TestInterpreter(t *testing.T) {
 		tc := tc
 		t.Run(tc.input, func(t *testing.T) {
 			t.Parallel()
-			expression := buildExpression(tc.input)
+			expression := buildExpression(t, tc.input)
 
-			i := Interpreter{}
+			i := New()
 			result, err := i.interpret(expression)
 			require.NoError(t, err)
 			require.Equal(t, tc.expected, result)
@@ -51,7 +51,7 @@ func TestInterpreter(t *testing.T) {
 	}
 }
 
-func TestInterpreterError(t *testing.T) {
+func TestInterpreterExpressionErrors(t *testing.T) {
 	cases := []struct {
 		input string
 	}{
@@ -76,8 +76,8 @@ func TestInterpreterError(t *testing.T) {
 		tc := tc
 		t.Run(tc.input, func(t *testing.T) {
 			t.Parallel()
-			expression := buildExpression(tc.input)
-			i := Interpreter{}
+			expression := buildExpression(t, tc.input)
+			i := New()
 			result, err := i.interpret(expression)
 			t.Logf("Result: %v", result)
 			require.Error(t, err)
@@ -85,11 +85,12 @@ func TestInterpreterError(t *testing.T) {
 	}
 }
 
-func buildExpression(input string) Expr {
+func buildExpression(t *testing.T, input string) Expr {
 	scanner := scanner.NewScanner(input)
 	scanner.ScanTokens()
 	parser := parser.NewParser[any](scanner.Tokens())
-	expression := parser.Parse()
+	expression, err := parser.Expression()
+	require.NoError(t, err)
 	return expression
 
 }

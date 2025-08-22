@@ -59,12 +59,11 @@ func run(source string) {
 	scanner := scanner.NewScanner(source)
 	scanner.ScanTokens()
 	token_list := scanner.Tokens()
-	// scanner.PrintTokens()
 	parser := parser.NewParser[any](token_list)
-	expression := parser.Parse()
+	statements, _ := parser.Parse() // TODO: check returned error for parser
 	if errors.ErrorFound() {
 		return
 	}
-	loxInterpreter := interpreter.Interpreter{}
-	loxInterpreter.Interpret(expression)
+	loxInterpreter := interpreter.New()
+	loxInterpreter.Interpret(statements)
 }
