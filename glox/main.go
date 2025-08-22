@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"glox/errors"
-	"glox/interpreter"
 	"glox/parser"
 	"glox/scanner"
 	"os"
@@ -60,11 +59,12 @@ func run(source string) {
 	scanner.ScanTokens()
 	token_list := scanner.Tokens()
 	// scanner.PrintTokens()
-	parser := parser.NewParser[any](token_list)
-	expression := parser.Parse()
-	if errors.ErrorFound() {
-		return
-	}
-	loxInterpreter := interpreter.Interpreter{}
-	loxInterpreter.Interpret(expression)
+	// TODO: adapt to statements
+	_ = parser.NewParser[any](token_list)
+	//expression := parser.Parse()
+	//if errors.ErrorFound() {
+	//	return
+	//}
+	//loxInterpreter := interpreter.Interpreter{}
+	//loxInterpreter.Interpret(expression)
 }

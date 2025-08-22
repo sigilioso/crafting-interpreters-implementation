@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"glox/errors"
 	"glox/expr"
+	"glox/stmt"
 	"glox/tokens"
 	"strconv"
 )
@@ -13,7 +14,11 @@ type Binary = expr.Binary[any]
 type Literal = expr.Literal[any]
 type Unary = expr.Unary[any]
 type Grouping = expr.Grouping[any]
-type Visitor = expr.Visitor[any]
+type ExprVisitor = expr.Visitor[any]
+
+type StmtExpression = stmt.Expression[any]
+type StmtPrint = stmt.Print[any]
+type StmtVisitor = stmt.Visitor[any]
 
 type Interpreter struct{}
 
@@ -33,6 +38,22 @@ func (i Interpreter) interpret(expression Expr) (string, error) {
 		return "", err
 	}
 	return stringify(v), nil
+}
+
+func (i Interpreter) VisitForExpression(e StmtExpression) (any, error) {
+	if _, err := i.evaluate(e.Expression); err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (i Interpreter) VisitForPrint(p StmtPrint) (any, error) {
+	v, err := i.evaluate(p.Expression)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(stringify(v))
+	return nil, nil
 }
 
 func (i Interpreter) VisitForGrouping(grouping Grouping) (any, error) {

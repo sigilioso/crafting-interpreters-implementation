@@ -4,6 +4,7 @@ import (
 	"errors"
 	gloxErrors "glox/errors"
 	"glox/expr"
+	"glox/stmt"
 	"glox/tokens"
 )
 
@@ -21,12 +22,45 @@ func NewParser[T any](token_list []tokens.Token) Parser[T] {
 	}
 }
 
-func (p *Parser[T]) Parse() expr.Expr[T] {
-	expression, err := p.expression()
-	if err != nil {
-		return nil
+func (p *Parser[T]) Parse() ([]stmt.Stmt[T], error) {
+	statements := []stmt.Stmt[T]{}
+	for !p.isAtEnd() {
+		statement, err := p.statement()
+		if err != nil {
+			return nil, err
+		}
+		statements = append(statements, statement)
 	}
-	return expression
+	return statements, nil
+}
+
+func (p *Parser[T]) statement() (stmt.Stmt[T], error) {
+	if p.match(tokens.Print) {
+		return p.printStatement()
+	}
+	return p.expressionStatement()
+}
+
+func (p *Parser[T]) printStatement() (stmt.Stmt[T], error) {
+	value, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	if _, err := p.consume(tokens.Semicolon, "Expect ';' after value."); err != nil {
+		return nil, err
+	}
+	return stmt.Print[T]{Expression: value}, nil
+}
+
+func (p *Parser[T]) expressionStatement() (stmt.Stmt[T], error) {
+	value, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	if _, err := p.consume(tokens.Semicolon, "Expect ';' after value."); err != nil {
+		return nil, err
+	}
+	return stmt.Expression[T]{Expression: value}, nil
 }
 
 func (p *Parser[T]) expression() (expr.Expr[T], error) {

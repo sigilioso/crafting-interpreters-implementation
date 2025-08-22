@@ -15,23 +15,35 @@ func main() {
 		"Literal  : Value any",
 		"Unary    : Operator tokens.Token, Right Expr[T]",
 	}
-
 	defineAst("../../glox/expr", "Expr", types)
 
-	// run go fmt
-	cmd := exec.Command("go", "fmt")
-	cmd.Dir = "../../glox/expr"
-	if err := cmd.Run(); err != nil {
-		panic(err)
+	types_stmt := []string{
+		"Expression	: Expression expr.Expr[T]",
+		"Print		: Expression expr.Expr[T]",
+	}
+	defineAst("../../glox/stmt", "Stmt", types_stmt)
+
+	// format go code
+	dirs := []string{
+		"../../glox/expr",
+		"../../glox/stmt",
+	}
+	for _, dir := range dirs {
+		cmd := exec.Command("goimports", "-w", ".")
+		cmd.Dir = dir
+		if err := cmd.Run(); err != nil {
+			panic(err)
+		}
 	}
 }
 
 func defineAst(outputDir string, basename string, types []string) {
+	packageName := path.Base(outputDir)
 	filePath := path.Join(outputDir, strings.ToLower(basename)+".go")
 	_ = os.Remove(filePath)
 	var code strings.Builder
 	fmt.Fprintln(&code, "// Generated via tools/generate-ast")
-	fmt.Fprintln(&code, "package expr")
+	fmt.Fprintf(&code, "package %s\n", packageName)
 	fmt.Fprintln(&code)
 	fmt.Fprintf(&code, "import %q\n", "glox/tokens")
 	fmt.Fprintln(&code)
