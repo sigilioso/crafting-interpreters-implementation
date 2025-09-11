@@ -11,20 +11,20 @@ import (
 )
 
 type Expr = expr.Expr[any]
-type Binary = expr.Binary[any]
-type Literal = expr.Literal[any]
-type Unary = expr.Unary[any]
-type Grouping = expr.Grouping[any]
-type Variable = expr.Variable[any]
-type Assign = expr.Assign[any]
+type BinaryExpr = expr.Binary[any]
+type LiteralExpr = expr.Literal[any]
+type UnaryExpr = expr.Unary[any]
+type GroupingExpr = expr.Grouping[any]
+type VariableExpr = expr.Variable[any]
+type AssignExpr = expr.Assign[any]
 type ExprVisitor = expr.Visitor[any]
 
-type StmtExpression = stmt.Expression[any]
-type StmtPrint = stmt.Print[any]
-type StmtVisitor = stmt.Visitor[any]
-type StmtVar = stmt.Var[any]
-type StmtBlock = stmt.Block[any]
 type Stmt = stmt.Stmt[any]
+type ExpressionStmt = stmt.Expression[any]
+type PrintStmt = stmt.Print[any]
+type VarStmt = stmt.Var[any]
+type BlockStmt = stmt.Block[any]
+type StmtVisitor = stmt.Visitor[any]
 
 type Interpreter struct {
 	env *environment.Environment
@@ -70,14 +70,14 @@ func (i *Interpreter) executeBlock(statements []Stmt, env *environment.Environme
 	return nil
 }
 
-func (i *Interpreter) VisitForExpression(e StmtExpression) (any, error) {
+func (i *Interpreter) VisitForExpression(e ExpressionStmt) (any, error) {
 	if _, err := i.evaluate(e.Expression); err != nil {
 		return nil, err
 	}
 	return nil, nil
 }
 
-func (i *Interpreter) VisitForPrint(p StmtPrint) (any, error) {
+func (i *Interpreter) VisitForPrint(p PrintStmt) (any, error) {
 	v, err := i.evaluate(p.Expression)
 	if err != nil {
 		return nil, err
@@ -87,11 +87,11 @@ func (i *Interpreter) VisitForPrint(p StmtPrint) (any, error) {
 	return nil, nil
 }
 
-func (i *Interpreter) VisitForBlock(b StmtBlock) (any, error) {
+func (i *Interpreter) VisitForBlock(b BlockStmt) (any, error) {
 	return nil, i.executeBlock(b.Statements, environment.New(i.env))
 }
 
-func (i *Interpreter) VisitForVar(v StmtVar) (any, error) {
+func (i *Interpreter) VisitForVar(v VarStmt) (any, error) {
 	var value any
 	if v.Initializer != nil {
 		v, err := i.evaluate(v.Initializer)
@@ -104,11 +104,11 @@ func (i *Interpreter) VisitForVar(v StmtVar) (any, error) {
 	return nil, nil
 }
 
-func (i *Interpreter) VisitForVariable(v Variable) (any, error) {
+func (i *Interpreter) VisitForVariable(v VariableExpr) (any, error) {
 	return i.env.Get(v.Name)
 }
 
-func (i *Interpreter) VisitForAssign(a Assign) (any, error) {
+func (i *Interpreter) VisitForAssign(a AssignExpr) (any, error) {
 	value, err := i.evaluate(a.Value)
 	if err != nil {
 		return nil, err
@@ -119,15 +119,15 @@ func (i *Interpreter) VisitForAssign(a Assign) (any, error) {
 	return value, nil
 }
 
-func (i *Interpreter) VisitForGrouping(grouping Grouping) (any, error) {
+func (i *Interpreter) VisitForGrouping(grouping GroupingExpr) (any, error) {
 	return i.evaluate(grouping.Expression)
 }
 
-func (i *Interpreter) VisitForLiteral(literal Literal) (any, error) {
+func (i *Interpreter) VisitForLiteral(literal LiteralExpr) (any, error) {
 	return literal.Value, nil
 }
 
-func (i *Interpreter) VisitForBinary(binary Binary) (any, error) {
+func (i *Interpreter) VisitForBinary(binary BinaryExpr) (any, error) {
 	left, err := i.evaluate(binary.Left)
 	if err != nil {
 		return nil, err
@@ -165,7 +165,7 @@ func (i *Interpreter) VisitForBinary(binary Binary) (any, error) {
 	return nil, nil // unreachable
 }
 
-func (i *Interpreter) VisitForUnary(unary Unary) (any, error) {
+func (i *Interpreter) VisitForUnary(unary UnaryExpr) (any, error) {
 	right, err := i.evaluate(unary.Right)
 	if err != nil {
 		return nil, err
