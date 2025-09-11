@@ -10,7 +10,7 @@ var NilLiteral = NilLiteralType{}
 
 type NilLiteralType struct{}
 
-func (n NilLiteralType) String() string { return "null" }
+func (n NilLiteralType) String() string { return "nil" }
 
 type Token struct {
 	TokenType TokenType

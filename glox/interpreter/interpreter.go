@@ -156,7 +156,7 @@ func (i *Interpreter) VisitForBinary(binary Binary) (any, error) {
 	case tokens.LessEqual:
 		return numOperation(binary.Operator, left, right, func(l, r float64) any { return l <= r })
 
-	case tokens.Equal: // Equality works the same as lox in go
+	case tokens.EqualEqual: // Equality works the same as lox in go
 		return left == right, nil
 	case tokens.BangEqual:
 		return left != right, nil
@@ -188,7 +188,7 @@ func (i *Interpreter) evaluate(expression Expr) (any, error) {
 	return expression.Accept(i)
 }
 
-// asNumber returns the number repesentation of the provided value or an error
+// asNumber returns the number representation of the provided value or an error
 // NOTE: it is Ok to try to parse as float because any number comes as a float
 // due to the scanner implementation
 func asNumber(op tokens.Token, v any) (float64, error) {
@@ -202,11 +202,11 @@ func asNumber(op tokens.Token, v any) (float64, error) {
 func asNumbers(op tokens.Token, a, b any) (float64, float64, error) {
 	fa, ok := a.(float64)
 	if !ok {
-		return .0, .0, errors.NewRuntimeError(op, "Operand must be a number.")
+		return .0, .0, errors.NewRuntimeError(op, "Operands must be numbers.")
 	}
 	fb, ok := b.(float64)
 	if !ok {
-		return .0, .0, errors.NewRuntimeError(op, "Operand must be a number.")
+		return .0, .0, errors.NewRuntimeError(op, "Operands must be numbers.")
 	}
 	return fa, fb, nil
 }

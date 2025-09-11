@@ -40,7 +40,7 @@ func AtToken(token tokens.Token, message string) {
 
 func Report(line int, where string, message string) {
 	errorFound = true
-	fmt.Fprintf(os.Stderr, "[line %d] Error %s: %s", line, where, message)
+	fmt.Fprintf(os.Stderr, "[line %d] Error%s: %s\n", line, where, message)
 }
 
 func ReportRuntimeError(e *RuntimeError) {

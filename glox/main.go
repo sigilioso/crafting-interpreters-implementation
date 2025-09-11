@@ -60,7 +60,7 @@ func run(source string) {
 	scanner.ScanTokens()
 	token_list := scanner.Tokens()
 	parser := parser.NewParser[any](token_list)
-	statements, _ := parser.Parse() // TODO: check returned error for parser
+	statements, _ := parser.Parse()
 	if errors.ErrorFound() {
 		return
 	}
