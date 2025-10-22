@@ -65,6 +65,9 @@ func (p *Parser[T]) varDeclaration() (stmt.Stmt[T], error) {
 }
 
 func (p *Parser[T]) statement() (stmt.Stmt[T], error) {
+	if p.match(tokens.If) {
+		return p.ifStatement()
+	}
 	if p.match(tokens.Print) {
 		return p.printStatement()
 	}
@@ -76,6 +79,34 @@ func (p *Parser[T]) statement() (stmt.Stmt[T], error) {
 		return stmt.Block[T]{Statements: statements}, nil
 	}
 	return p.expressionStatement()
+}
+
+func (p *Parser[T]) ifStatement() (stmt.Stmt[T], error) {
+	_, err := p.consume(tokens.LeftParen, "Expect '(' after 'if'.")
+	if err != nil {
+		return nil, err
+	}
+	condition, err := p.Expression()
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.consume(tokens.RightParen, "Expect ')' after if condition.")
+	if err != nil {
+		return nil, err
+	}
+	thenBranch, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+	var elseBranch stmt.Stmt[T]
+	if p.match(tokens.Else) {
+		elseB, err := p.statement()
+		elseBranch = elseB
+		if err != nil {
+			return nil, err
+		}
+	}
+	return stmt.If[T]{Condition: condition, ThenBranch: thenBranch, ElseBranch: elseBranch}, nil
 }
 
 func (p *Parser[T]) printStatement() (stmt.Stmt[T], error) {
@@ -105,7 +136,7 @@ func (p *Parser[T]) Expression() (expr.Expr[T], error) {
 }
 
 func (p *Parser[T]) assignment() (expr.Expr[T], error) {
-	expression, err := p.equality()
+	expression, err := p.or()
 	if err != nil {
 		return nil, err
 	}
@@ -240,6 +271,42 @@ func (p *Parser[T]) primary() (expr.Expr[T], error) {
 	}
 
 	return nil, parseError(p.peek(), "Expect expression.")
+}
+
+func (p *Parser[T]) or() (expr.Expr[T], error) {
+	expression, err := p.and()
+	if err != nil {
+		return nil, err
+	}
+
+	for p.match(tokens.Or) {
+		operator := p.previous()
+		right, err := p.and()
+		if err != nil {
+			return nil, err
+		}
+		expression = expr.Logical[T]{Left: expression, Operator: operator, Right: right}
+	}
+
+	return expression, nil
+}
+
+func (p *Parser[T]) and() (expr.Expr[T], error) {
+	expression, err := p.equality()
+	if err != nil {
+		return nil, err
+	}
+
+	for p.match(tokens.And) {
+		operator := p.previous()
+		right, err := p.equality()
+		if err != nil {
+			return nil, err
+		}
+		expression = expr.Logical[T]{Left: expression, Operator: operator, Right: right}
+	}
+	return expression, nil
+
 }
 
 func (p *Parser[T]) match(tokenTypes ...tokens.TokenType) bool {

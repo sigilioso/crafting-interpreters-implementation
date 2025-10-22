@@ -14,6 +14,7 @@ type Expr = expr.Expr[any]
 type BinaryExpr = expr.Binary[any]
 type LiteralExpr = expr.Literal[any]
 type UnaryExpr = expr.Unary[any]
+type LogicalExpr = expr.Logical[any]
 type GroupingExpr = expr.Grouping[any]
 type VariableExpr = expr.Variable[any]
 type AssignExpr = expr.Assign[any]
@@ -22,6 +23,7 @@ type ExprVisitor = expr.Visitor[any]
 type Stmt = stmt.Stmt[any]
 type ExpressionStmt = stmt.Expression[any]
 type PrintStmt = stmt.Print[any]
+type IfStmt = stmt.If[any]
 type VarStmt = stmt.Var[any]
 type BlockStmt = stmt.Block[any]
 type StmtVisitor = stmt.Visitor[any]
@@ -75,6 +77,38 @@ func (i *Interpreter) VisitForExpression(e ExpressionStmt) (any, error) {
 		return nil, err
 	}
 	return nil, nil
+}
+
+func (i *Interpreter) VisitForIf(s IfStmt) (any, error) {
+	condition, err := i.evaluate(s.Condition)
+	if err != nil {
+		return nil, err
+	}
+	if isTruthy(condition) {
+		return i.execute(s.ThenBranch)
+	}
+	if s.ElseBranch != nil {
+		return i.execute(s.ElseBranch)
+	}
+	return nil, nil
+}
+
+func (i *Interpreter) VisitForLogical(l LogicalExpr) (any, error) {
+	left, err := i.evaluate(l.Left)
+	if err != nil {
+		return nil, err
+	}
+
+	if l.Operator.TokenType == tokens.Or {
+		if isTruthy(left) {
+			return left, nil
+		}
+	} else { // And
+		if !isTruthy(left) {
+			return left, nil
+		}
+	}
+	return i.evaluate(l.Right)
 }
 
 func (i *Interpreter) VisitForPrint(p PrintStmt) (any, error) {
