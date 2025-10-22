@@ -51,6 +51,16 @@ func (e Unary[T]) Accept(v Visitor[T]) (T, error) {
 	return v.VisitForUnary(e)
 }
 
+type Logical[T any] struct {
+	Left     Expr[T]
+	Operator tokens.Token
+	Right    Expr[T]
+}
+
+func (e Logical[T]) Accept(v Visitor[T]) (T, error) {
+	return v.VisitForLogical(e)
+}
+
 type Variable[T any] struct {
 	Name tokens.Token
 }
@@ -65,5 +75,6 @@ type Visitor[T any] interface {
 	VisitForGrouping(Grouping[T]) (T, error)
 	VisitForLiteral(Literal[T]) (T, error)
 	VisitForUnary(Unary[T]) (T, error)
+	VisitForLogical(Logical[T]) (T, error)
 	VisitForVariable(Variable[T]) (T, error)
 }

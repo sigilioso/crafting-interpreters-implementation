@@ -65,8 +65,17 @@ func (p *Parser[T]) varDeclaration() (stmt.Stmt[T], error) {
 }
 
 func (p *Parser[T]) statement() (stmt.Stmt[T], error) {
+	if p.match(tokens.If) {
+		return p.ifStatement()
+	}
 	if p.match(tokens.Print) {
 		return p.printStatement()
+	}
+	if p.match(tokens.While) {
+		return p.whileStatemet()
+	}
+	if p.match(tokens.For) {
+		return p.forStatement()
 	}
 	if p.match(tokens.LeftBrace) {
 		statements, err := p.block()
@@ -76,6 +85,127 @@ func (p *Parser[T]) statement() (stmt.Stmt[T], error) {
 		return stmt.Block[T]{Statements: statements}, nil
 	}
 	return p.expressionStatement()
+}
+
+func (p *Parser[T]) ifStatement() (stmt.Stmt[T], error) {
+	_, err := p.consume(tokens.LeftParen, "Expect '(' after 'if'.")
+	if err != nil {
+		return nil, err
+	}
+	condition, err := p.Expression()
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.consume(tokens.RightParen, "Expect ')' after if condition.")
+	if err != nil {
+		return nil, err
+	}
+	thenBranch, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+	var elseBranch stmt.Stmt[T]
+	if p.match(tokens.Else) {
+		elseB, err := p.statement()
+		elseBranch = elseB
+		if err != nil {
+			return nil, err
+		}
+	}
+	return stmt.If[T]{Condition: condition, ThenBranch: thenBranch, ElseBranch: elseBranch}, nil
+}
+
+func (p *Parser[T]) whileStatemet() (stmt.Stmt[T], error) {
+	_, err := p.consume(tokens.LeftParen, "Expect '(' after 'while'.")
+	if err != nil {
+		return nil, err
+	}
+	condition, err := p.Expression()
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.consume(tokens.RightParen, "Expect ')' after condition.")
+	if err != nil {
+		return nil, err
+	}
+	body, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+	return stmt.While[T]{Condition: condition, Body: body}, nil
+}
+
+// forStatement syntactic sugar to support for syntax
+func (p *Parser[T]) forStatement() (stmt.Stmt[T], error) {
+	// for(var i = 0; i < 10; i++)
+	_, err := p.consume(tokens.LeftParen, "Expect '(' after 'for'.")
+	if err != nil {
+		return nil, err
+	}
+
+	var initializer stmt.Stmt[T]
+	if p.match(tokens.Semicolon) {
+		initializer = nil
+	} else if p.match(tokens.Var) {
+		initializer, err = p.varDeclaration()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		initializer, err = p.expressionStatement()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var condition expr.Expr[T]
+	if !p.check(tokens.Semicolon) {
+		condition, err = p.Expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+	_, err = p.consume(tokens.Semicolon, "Expect ';' after loop condition")
+	if err != nil {
+		return nil, err
+	}
+
+	var increment expr.Expr[T]
+	if !p.check(tokens.RightParen) {
+		increment, err = p.Expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	_, err = p.consume(tokens.RightParen, "Expect ')' after loop condition")
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+
+	// add the initializer statement if any
+	if increment != nil {
+		statements := []stmt.Stmt[T]{body, stmt.Expression[T]{Expression: increment}}
+		body = stmt.Block[T]{Statements: statements}
+	}
+	// if no condition set true
+	if condition == nil {
+		condition = expr.Literal[T]{Value: true}
+	}
+	body = stmt.While[T]{Condition: condition, Body: body}
+
+	// add the increment statement if any (before the while)
+	if initializer != nil {
+		statements := []stmt.Stmt[T]{initializer, body}
+		body = stmt.Block[T]{Statements: statements}
+	}
+
+	return body, nil
 }
 
 func (p *Parser[T]) printStatement() (stmt.Stmt[T], error) {
@@ -94,7 +224,7 @@ func (p *Parser[T]) expressionStatement() (stmt.Stmt[T], error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, err := p.consume(tokens.Semicolon, "Expect ';' after value."); err != nil {
+	if _, err := p.consume(tokens.Semicolon, "Expect ';' after expression."); err != nil {
 		return nil, err
 	}
 	return stmt.Expression[T]{Expression: value}, nil
@@ -105,7 +235,7 @@ func (p *Parser[T]) Expression() (expr.Expr[T], error) {
 }
 
 func (p *Parser[T]) assignment() (expr.Expr[T], error) {
-	expression, err := p.equality()
+	expression, err := p.or()
 	if err != nil {
 		return nil, err
 	}
@@ -240,6 +370,42 @@ func (p *Parser[T]) primary() (expr.Expr[T], error) {
 	}
 
 	return nil, parseError(p.peek(), "Expect expression.")
+}
+
+func (p *Parser[T]) or() (expr.Expr[T], error) {
+	expression, err := p.and()
+	if err != nil {
+		return nil, err
+	}
+
+	for p.match(tokens.Or) {
+		operator := p.previous()
+		right, err := p.and()
+		if err != nil {
+			return nil, err
+		}
+		expression = expr.Logical[T]{Left: expression, Operator: operator, Right: right}
+	}
+
+	return expression, nil
+}
+
+func (p *Parser[T]) and() (expr.Expr[T], error) {
+	expression, err := p.equality()
+	if err != nil {
+		return nil, err
+	}
+
+	for p.match(tokens.And) {
+		operator := p.previous()
+		right, err := p.equality()
+		if err != nil {
+			return nil, err
+		}
+		expression = expr.Logical[T]{Left: expression, Operator: operator, Right: right}
+	}
+	return expression, nil
+
 }
 
 func (p *Parser[T]) match(tokenTypes ...tokens.TokenType) bool {

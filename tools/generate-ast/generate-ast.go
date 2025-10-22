@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// "Logical  : Expr left, Token operator, Expr right",
 func main() {
 	types_expr := []string{
 		"Assign	  : Name tokens.Token, Value Expr[T]",
@@ -15,6 +16,7 @@ func main() {
 		"Grouping : Expression Expr[T]",
 		"Literal  : Value any",
 		"Unary    : Operator tokens.Token, Right Expr[T]",
+		"Logical  : Left Expr[T], Operator tokens.Token, Right Expr[T]",
 		"Variable : Name tokens.Token",
 	}
 	defineAst("../../glox/expr", "Expr", types_expr)
@@ -22,8 +24,10 @@ func main() {
 	types_stmt := []string{
 		"Block		: Statements []Stmt[T]",
 		"Expression	: Expression expr.Expr[T]",
+		"If			: Condition expr.Expr[T], ThenBranch Stmt[T], ElseBranch Stmt[T]",
 		"Print		: Expression expr.Expr[T]",
 		"Var		: Name tokens.Token, Initializer expr.Expr[T]",
+		"While		: Condition expr.Expr[T], Body Stmt[T]",
 	}
 	defineAst("../../glox/stmt", "Stmt", types_stmt)
 
@@ -36,7 +40,7 @@ func main() {
 		cmd := exec.Command("goimports", "-w", ".")
 		cmd.Dir = dir
 		if err := cmd.Run(); err != nil {
-			panic(err)
+			panic(fmt.Sprintf("Error executing goimports %s for '%s'", err, dir))
 		}
 	}
 }

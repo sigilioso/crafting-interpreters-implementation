@@ -35,5 +35,8 @@ func (e *Environment) Assign(name tokens.Token, value any) error {
 		e.values[name.Lexeme] = value
 		return nil
 	}
+	if e.enclosing != nil {
+		return e.enclosing.Assign(name, value)
+	}
 	return errors.NewRuntimeError(name, fmt.Sprintf("Undefined variable '%s'.", name.Lexeme))
 }
