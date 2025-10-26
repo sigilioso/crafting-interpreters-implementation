@@ -2,11 +2,14 @@ package parser
 
 import (
 	"errors"
+	"fmt"
 	gloxErrors "glox/errors"
 	"glox/expr"
 	"glox/stmt"
 	"glox/tokens"
 )
+
+const ARGUMENTS_LIMIT = 255
 
 var ErrParse = errors.New("parse Error")
 
@@ -32,11 +35,17 @@ func (p *Parser[T]) Parse() ([]stmt.Stmt[T], error) {
 }
 
 func (p *Parser[T]) declaration() stmt.Stmt[T] {
-	// Get a varDeclaration when matching a variable, get a regular statement otherwise
+	// Get a regular statement if no other declaration matches
 	statementGetter := p.statement
-	if p.match(tokens.Var) {
+
+	if p.match(tokens.Fun) {
+		statementGetter = func() (stmt.Stmt[T], error) {
+			return p.function("function")
+		}
+	} else if p.match(tokens.Var) {
 		statementGetter = p.varDeclaration
 	}
+
 	statement, err := statementGetter()
 	if err != nil {
 		// Synchronize if we found any parsing error
@@ -68,6 +77,9 @@ func (p *Parser[T]) statement() (stmt.Stmt[T], error) {
 	if p.match(tokens.If) {
 		return p.ifStatement()
 	}
+	if p.match(tokens.Return) {
+		return p.returnStatement()
+	}
 	if p.match(tokens.Print) {
 		return p.printStatement()
 	}
@@ -85,6 +97,71 @@ func (p *Parser[T]) statement() (stmt.Stmt[T], error) {
 		return stmt.Block[T]{Statements: statements}, nil
 	}
 	return p.expressionStatement()
+}
+
+func (p *Parser[T]) function(functionType string) (f stmt.Function[T], err error) {
+	// function name
+	name, err := p.consume(tokens.Identifier, fmt.Sprintf("Expect %s name.", functionType))
+	if err != nil {
+		return f, err
+	}
+	// (
+	_, err = p.consume(tokens.LeftParen, fmt.Sprintf("Expect '(' after %s name.", functionType))
+	if err != nil {
+		return f, err
+	}
+	// parameters
+	parameters := []tokens.Token{}
+	if !p.check(tokens.RightParen) {
+		param, err := p.consume(tokens.Identifier, "Expect parameter name.")
+		if err != nil {
+			return f, err
+		}
+		parameters = append(parameters, param)
+		for p.match(tokens.Comma) {
+			if len(parameters) >= 255 {
+				return f, parseError(p.peek(), "Can't have more than 255 parameters.")
+			}
+			param, err := p.consume(tokens.Identifier, "Expect parameter name.")
+			if err != nil {
+				return f, err
+			}
+			parameters = append(parameters, param)
+		}
+	}
+	// )
+	_, err = p.consume(tokens.RightParen, "Expect ')' after parameters.")
+	if err != nil {
+		return f, err
+	}
+	// {
+	_, err = p.consume(tokens.LeftBrace, fmt.Sprintf("Expect '{' before %s body.", functionType))
+	if err != nil {
+		return f, err
+	}
+	// function body
+	body, err := p.block()
+	if err != nil {
+		return f, err
+	}
+	return stmt.Function[T]{Name: name, Params: parameters, Body: body}, nil
+}
+
+func (p *Parser[T]) returnStatement() (stmt.Stmt[T], error) {
+	keyword := p.previous()
+	var value expr.Expr[T]
+	if !p.check(tokens.Semicolon) {
+		v, err := p.Expression()
+		if err != nil {
+			return nil, err
+		}
+		value = v
+	}
+	_, err := p.consume(tokens.Semicolon, "Expect ';' after return value.")
+	if err != nil {
+		return nil, err
+	}
+	return stmt.Return[T]{Keyword: keyword, Value: value}, nil
 }
 
 func (p *Parser[T]) ifStatement() (stmt.Stmt[T], error) {
@@ -341,7 +418,53 @@ func (p *Parser[T]) unary() (expr.Expr[T], error) {
 		}
 		return expr.Unary[T]{Operator: operator, Right: right}, nil
 	}
-	return p.primary()
+	return p.call()
+}
+
+func (p *Parser[T]) call() (expr.Expr[T], error) {
+	expression, err := p.primary()
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		if p.match(tokens.LeftParen) {
+			expression, err = p.finishCall(expression)
+			if err != nil {
+				return nil, err
+			}
+
+		} else {
+			break
+		}
+	}
+	return expression, nil
+}
+
+func (p *Parser[T]) finishCall(callee expr.Expr[T]) (expr.Expr[T], error) {
+	arguments := []expr.Expr[T]{}
+	if !p.check(tokens.RightParen) {
+		arg, err := p.Expression()
+		if err != nil {
+			return nil, err
+		}
+		arguments = append(arguments, arg)
+		for p.match(tokens.Comma) {
+			if len(arguments) >= ARGUMENTS_LIMIT {
+				return nil, parseError(p.peek(), fmt.Sprintf("Can't have more than %d arguments.", ARGUMENTS_LIMIT))
+			}
+			arg, err := p.Expression()
+			if err != nil {
+				return nil, err
+			}
+			arguments = append(arguments, arg)
+		}
+	}
+	paren, err := p.consume(tokens.RightParen, "Expect ')' after arguments.")
+	if err != nil {
+		return nil, err
+	}
+	return expr.Call[T]{Callee: callee, Paren: paren, Arguments: arguments}, nil
 }
 
 func (p *Parser[T]) primary() (expr.Expr[T], error) {

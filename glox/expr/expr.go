@@ -26,6 +26,16 @@ func (e Binary[T]) Accept(v Visitor[T]) (T, error) {
 	return v.VisitForBinary(e)
 }
 
+type Call[T any] struct {
+	Callee    Expr[T]
+	Paren     tokens.Token
+	Arguments []Expr[T]
+}
+
+func (e Call[T]) Accept(v Visitor[T]) (T, error) {
+	return v.VisitForCall(e)
+}
+
 type Grouping[T any] struct {
 	Expression Expr[T]
 }
@@ -72,6 +82,7 @@ func (e Variable[T]) Accept(v Visitor[T]) (T, error) {
 type Visitor[T any] interface {
 	VisitForAssign(Assign[T]) (T, error)
 	VisitForBinary(Binary[T]) (T, error)
+	VisitForCall(Call[T]) (T, error)
 	VisitForGrouping(Grouping[T]) (T, error)
 	VisitForLiteral(Literal[T]) (T, error)
 	VisitForUnary(Unary[T]) (T, error)

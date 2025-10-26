@@ -45,6 +45,10 @@ func (p AstPrinter) VisitForLogical(e expr.Logical[string]) (string, error) {
 	panic("Not implemented")
 }
 
+func (p AstPrinter) VisitForCall(e expr.Call[string]) (string, error) {
+	panic("Not implemented")
+}
+
 func (p AstPrinter) parenthesize(name string, exprs ...expr.Expr[string]) (string, error) {
 	s := "(" + name
 	for _, e := range exprs {
