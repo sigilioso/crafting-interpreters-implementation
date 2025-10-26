@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-// "Logical  : Expr left, Token operator, Expr right",
 func main() {
 	types_expr := []string{
 		"Assign	  : Name tokens.Token, Value Expr[T]",
 		"Binary   : Left Expr[T], Operator tokens.Token, Right Expr[T]",
+		"Call     : Callee Expr[T], Paren tokens.Token, Arguments []Expr[T]",
 		"Grouping : Expression Expr[T]",
 		"Literal  : Value any",
 		"Unary    : Operator tokens.Token, Right Expr[T]",
@@ -24,8 +24,10 @@ func main() {
 	types_stmt := []string{
 		"Block		: Statements []Stmt[T]",
 		"Expression	: Expression expr.Expr[T]",
+		"Function   : Name tokens.Token, Params []tokens.Token, Body []Stmt[T]",
 		"If			: Condition expr.Expr[T], ThenBranch Stmt[T], ElseBranch Stmt[T]",
 		"Print		: Expression expr.Expr[T]",
+		"Return 	: Keyword tokens.Token, Value expr.Expr[T]",
 		"Var		: Name tokens.Token, Initializer expr.Expr[T]",
 		"While		: Condition expr.Expr[T], Body Stmt[T]",
 	}

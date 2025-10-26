@@ -13,6 +13,7 @@ import (
 type Expr = expr.Expr[any]
 type BinaryExpr = expr.Binary[any]
 type LiteralExpr = expr.Literal[any]
+type CallExpr = expr.Call[any]
 type UnaryExpr = expr.Unary[any]
 type LogicalExpr = expr.Logical[any]
 type GroupingExpr = expr.Grouping[any]
@@ -23,18 +24,23 @@ type ExprVisitor = expr.Visitor[any]
 type Stmt = stmt.Stmt[any]
 type ExpressionStmt = stmt.Expression[any]
 type PrintStmt = stmt.Print[any]
+type FunctionStmt = stmt.Function[any]
 type IfStmt = stmt.If[any]
 type VarStmt = stmt.Var[any]
+type ReturnStmt = stmt.Return[any]
 type BlockStmt = stmt.Block[any]
 type WhileStmt = stmt.While[any]
 type StmtVisitor = stmt.Visitor[any]
 
 type Interpreter struct {
-	env *environment.Environment
+	env     *environment.Environment
+	globals *environment.Environment
 }
 
 func New() Interpreter {
-	return Interpreter{env: environment.New(nil)}
+	env := environment.New(nil)
+	env.Define("clock", &clock{})
+	return Interpreter{env: environment.New(nil), globals: env}
 }
 
 func (i *Interpreter) Interpret(statements []Stmt) {
@@ -73,11 +79,55 @@ func (i *Interpreter) executeBlock(statements []Stmt, env *environment.Environme
 	return nil
 }
 
+func (i *Interpreter) VisitForCall(c CallExpr) (any, error) {
+	callee, err := i.evaluate(c.Callee)
+	if err != nil {
+		return nil, err
+	}
+	arguments := []any{}
+	for _, arg := range c.Arguments {
+		v, err := i.evaluate(arg)
+		if err != nil {
+			return nil, err
+		}
+		arguments = append(arguments, v)
+	}
+
+	function, isCallable := callee.(GloxCallable)
+	if !isCallable {
+		return nil, errors.NewRuntimeError(c.Paren, "Can only call functions and classes.")
+	}
+
+	if numArgs := len(arguments); numArgs != function.Arity() {
+		return nil, errors.NewRuntimeError(c.Paren, fmt.Sprintf("Expected %d arguments but got %d.", function.Arity(), numArgs))
+	}
+
+	return function.Call(i, arguments)
+}
+
 func (i *Interpreter) VisitForExpression(e ExpressionStmt) (any, error) {
 	if _, err := i.evaluate(e.Expression); err != nil {
 		return nil, err
 	}
 	return nil, nil
+}
+
+func (i *Interpreter) VisitForFunction(f FunctionStmt) (any, error) {
+	function := LoxFunction{Declaration: f}
+	i.env.Define(f.Name.Lexeme, &function)
+	return nil, nil
+}
+
+func (i *Interpreter) VisitForReturn(r ReturnStmt) (any, error) {
+	var value any
+	if r.Value != nil {
+		v, err := i.evaluate(r.Value)
+		if err != nil {
+			return nil, err
+		}
+		value = v
+	}
+	return nil, &Return{Value: value}
 }
 
 func (i *Interpreter) VisitForIf(s IfStmt) (any, error) {

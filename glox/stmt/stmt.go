@@ -26,6 +26,16 @@ func (e Expression[T]) Accept(v Visitor[T]) (T, error) {
 	return v.VisitForExpression(e)
 }
 
+type Function[T any] struct {
+	Name   tokens.Token
+	Params []tokens.Token
+	Body   []Stmt[T]
+}
+
+func (e Function[T]) Accept(v Visitor[T]) (T, error) {
+	return v.VisitForFunction(e)
+}
+
 type If[T any] struct {
 	Condition  expr.Expr[T]
 	ThenBranch Stmt[T]
@@ -42,6 +52,15 @@ type Print[T any] struct {
 
 func (e Print[T]) Accept(v Visitor[T]) (T, error) {
 	return v.VisitForPrint(e)
+}
+
+type Return[T any] struct {
+	Keyword tokens.Token
+	Value   expr.Expr[T]
+}
+
+func (e Return[T]) Accept(v Visitor[T]) (T, error) {
+	return v.VisitForReturn(e)
 }
 
 type Var[T any] struct {
@@ -65,8 +84,10 @@ func (e While[T]) Accept(v Visitor[T]) (T, error) {
 type Visitor[T any] interface {
 	VisitForBlock(Block[T]) (T, error)
 	VisitForExpression(Expression[T]) (T, error)
+	VisitForFunction(Function[T]) (T, error)
 	VisitForIf(If[T]) (T, error)
 	VisitForPrint(Print[T]) (T, error)
+	VisitForReturn(Return[T]) (T, error)
 	VisitForVar(Var[T]) (T, error)
 	VisitForWhile(While[T]) (T, error)
 }
