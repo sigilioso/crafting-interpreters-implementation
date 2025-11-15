@@ -35,12 +35,13 @@ type StmtVisitor = stmt.Visitor[any]
 type Interpreter struct {
 	env     *environment.Environment
 	globals *environment.Environment
+	locals  map[Expr]int
 }
 
 func New() Interpreter {
 	env := environment.New(nil)
 	env.Define("clock", &clock{})
-	return Interpreter{env: env, globals: env}
+	return Interpreter{env: env, globals: env, locals: map[Expr]int{}}
 }
 
 func (i *Interpreter) Interpret(statements []Stmt) {
@@ -206,7 +207,7 @@ func (i *Interpreter) VisitForVar(v VarStmt) (any, error) {
 }
 
 func (i *Interpreter) VisitForVariable(v VariableExpr) (any, error) {
-	return i.env.Get(v.Name)
+	return i.lookUpVariable(v.Name, v)
 }
 
 func (i *Interpreter) VisitForAssign(a AssignExpr) (any, error) {
@@ -214,9 +215,13 @@ func (i *Interpreter) VisitForAssign(a AssignExpr) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := i.env.Assign(a.Name, value); err != nil {
-		return nil, err
+	distance, exits := i.locals[a]
+	if !exits {
+		if err := i.globals.Assign(a.Name, value); err != nil {
+			return nil, err
+		}
 	}
+	i.env.AssignAt(distance, a.Name, value)
 	return value, nil
 }
 
@@ -287,6 +292,18 @@ func (i *Interpreter) VisitForUnary(unary UnaryExpr) (any, error) {
 
 func (i *Interpreter) evaluate(expression Expr) (any, error) {
 	return expression.Accept(i)
+}
+
+func (i *Interpreter) Resolve(expression Expr, dept int) {
+	i.locals[expression] = dept
+}
+
+func (i *Interpreter) lookUpVariable(name tokens.Token, expression Expr) (any, error) {
+	distance, exists := i.locals[expression]
+	if !exists {
+		return i.globals.Get(name)
+	}
+	return i.env.GetAt(distance, name.Lexeme), nil
 }
 
 // asNumber returns the number representation of the provided value or an error
