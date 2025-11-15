@@ -113,7 +113,7 @@ func (i *Interpreter) VisitForExpression(e ExpressionStmt) (any, error) {
 }
 
 func (i *Interpreter) VisitForFunction(f FunctionStmt) (any, error) {
-	function := LoxFunction{Declaration: f}
+	function := LoxFunction{Declaration: f, Closure: i.env}
 	i.env.Define(f.Name.Lexeme, &function)
 	return nil, nil
 }
