@@ -40,3 +40,27 @@ func (e *Environment) Assign(name tokens.Token, value any) error {
 	}
 	return errors.NewRuntimeError(name, fmt.Sprintf("Undefined variable '%s'.", name.Lexeme))
 }
+
+func (e *Environment) GetAt(distance int, name string) any {
+	return e.ancestor(distance).values[name]
+}
+
+func (e *Environment) AssignAt(distance int, name tokens.Token, value any) {
+	e.ancestor(distance).values[name.Lexeme] = value
+}
+
+func (e *Environment) ancestor(distance int) *Environment {
+	result := e
+	for i := 0; i < distance; i++ {
+		result = result.enclosing
+	}
+	return result
+}
+
+func (e *Environment) Print() {
+	fmt.Printf("Values: %v\n", e.values)
+	if e.enclosing != nil {
+		fmt.Println("-->")
+		e.enclosing.Print()
+	}
+}

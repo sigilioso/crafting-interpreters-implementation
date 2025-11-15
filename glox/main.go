@@ -6,6 +6,7 @@ import (
 	"glox/errors"
 	"glox/interpreter"
 	"glox/parser"
+	"glox/resolver"
 	"glox/scanner"
 	"os"
 )
@@ -65,5 +66,12 @@ func run(source string) {
 		return
 	}
 	loxInterpreter := interpreter.New()
+	resolver := resolver.NewResolver(&loxInterpreter)
+	if err := resolver.ResolveStatements(statements); err != nil {
+		return // TODO: check if this is reachable
+	}
+	if errors.ErrorFound() {
+		return
+	}
 	loxInterpreter.Interpret(statements)
 }

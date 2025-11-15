@@ -14,7 +14,7 @@ type Block[T any] struct {
 	Statements []Stmt[T]
 }
 
-func (e Block[T]) Accept(v Visitor[T]) (T, error) {
+func (e *Block[T]) Accept(v Visitor[T]) (T, error) {
 	return v.VisitForBlock(e)
 }
 
@@ -22,7 +22,7 @@ type Expression[T any] struct {
 	Expression expr.Expr[T]
 }
 
-func (e Expression[T]) Accept(v Visitor[T]) (T, error) {
+func (e *Expression[T]) Accept(v Visitor[T]) (T, error) {
 	return v.VisitForExpression(e)
 }
 
@@ -32,7 +32,7 @@ type Function[T any] struct {
 	Body   []Stmt[T]
 }
 
-func (e Function[T]) Accept(v Visitor[T]) (T, error) {
+func (e *Function[T]) Accept(v Visitor[T]) (T, error) {
 	return v.VisitForFunction(e)
 }
 
@@ -42,7 +42,7 @@ type If[T any] struct {
 	ElseBranch Stmt[T]
 }
 
-func (e If[T]) Accept(v Visitor[T]) (T, error) {
+func (e *If[T]) Accept(v Visitor[T]) (T, error) {
 	return v.VisitForIf(e)
 }
 
@@ -50,7 +50,7 @@ type Print[T any] struct {
 	Expression expr.Expr[T]
 }
 
-func (e Print[T]) Accept(v Visitor[T]) (T, error) {
+func (e *Print[T]) Accept(v Visitor[T]) (T, error) {
 	return v.VisitForPrint(e)
 }
 
@@ -59,7 +59,7 @@ type Return[T any] struct {
 	Value   expr.Expr[T]
 }
 
-func (e Return[T]) Accept(v Visitor[T]) (T, error) {
+func (e *Return[T]) Accept(v Visitor[T]) (T, error) {
 	return v.VisitForReturn(e)
 }
 
@@ -68,7 +68,7 @@ type Var[T any] struct {
 	Initializer expr.Expr[T]
 }
 
-func (e Var[T]) Accept(v Visitor[T]) (T, error) {
+func (e *Var[T]) Accept(v Visitor[T]) (T, error) {
 	return v.VisitForVar(e)
 }
 
@@ -77,17 +77,17 @@ type While[T any] struct {
 	Body      Stmt[T]
 }
 
-func (e While[T]) Accept(v Visitor[T]) (T, error) {
+func (e *While[T]) Accept(v Visitor[T]) (T, error) {
 	return v.VisitForWhile(e)
 }
 
 type Visitor[T any] interface {
-	VisitForBlock(Block[T]) (T, error)
-	VisitForExpression(Expression[T]) (T, error)
-	VisitForFunction(Function[T]) (T, error)
-	VisitForIf(If[T]) (T, error)
-	VisitForPrint(Print[T]) (T, error)
-	VisitForReturn(Return[T]) (T, error)
-	VisitForVar(Var[T]) (T, error)
-	VisitForWhile(While[T]) (T, error)
+	VisitForBlock(*Block[T]) (T, error)
+	VisitForExpression(*Expression[T]) (T, error)
+	VisitForFunction(*Function[T]) (T, error)
+	VisitForIf(*If[T]) (T, error)
+	VisitForPrint(*Print[T]) (T, error)
+	VisitForReturn(*Return[T]) (T, error)
+	VisitForVar(*Var[T]) (T, error)
+	VisitForWhile(*While[T]) (T, error)
 }

@@ -35,12 +35,13 @@ type StmtVisitor = stmt.Visitor[any]
 type Interpreter struct {
 	env     *environment.Environment
 	globals *environment.Environment
+	locals  map[Expr]int
 }
 
 func New() Interpreter {
 	env := environment.New(nil)
 	env.Define("clock", &clock{})
-	return Interpreter{env: env, globals: env}
+	return Interpreter{env: env, globals: env, locals: map[Expr]int{}}
 }
 
 func (i *Interpreter) Interpret(statements []Stmt) {
@@ -79,7 +80,7 @@ func (i *Interpreter) executeBlock(statements []Stmt, env *environment.Environme
 	return nil
 }
 
-func (i *Interpreter) VisitForCall(c CallExpr) (any, error) {
+func (i *Interpreter) VisitForCall(c *CallExpr) (any, error) {
 	callee, err := i.evaluate(c.Callee)
 	if err != nil {
 		return nil, err
@@ -105,20 +106,20 @@ func (i *Interpreter) VisitForCall(c CallExpr) (any, error) {
 	return function.Call(i, arguments)
 }
 
-func (i *Interpreter) VisitForExpression(e ExpressionStmt) (any, error) {
+func (i *Interpreter) VisitForExpression(e *ExpressionStmt) (any, error) {
 	if _, err := i.evaluate(e.Expression); err != nil {
 		return nil, err
 	}
 	return nil, nil
 }
 
-func (i *Interpreter) VisitForFunction(f FunctionStmt) (any, error) {
+func (i *Interpreter) VisitForFunction(f *FunctionStmt) (any, error) {
 	function := LoxFunction{Declaration: f, Closure: i.env}
 	i.env.Define(f.Name.Lexeme, &function)
 	return nil, nil
 }
 
-func (i *Interpreter) VisitForReturn(r ReturnStmt) (any, error) {
+func (i *Interpreter) VisitForReturn(r *ReturnStmt) (any, error) {
 	var value any
 	if r.Value != nil {
 		v, err := i.evaluate(r.Value)
@@ -130,7 +131,7 @@ func (i *Interpreter) VisitForReturn(r ReturnStmt) (any, error) {
 	return nil, &Return{Value: value}
 }
 
-func (i *Interpreter) VisitForIf(s IfStmt) (any, error) {
+func (i *Interpreter) VisitForIf(s *IfStmt) (any, error) {
 	condition, err := i.evaluate(s.Condition)
 	if err != nil {
 		return nil, err
@@ -144,7 +145,7 @@ func (i *Interpreter) VisitForIf(s IfStmt) (any, error) {
 	return nil, nil
 }
 
-func (i *Interpreter) VisitForLogical(l LogicalExpr) (any, error) {
+func (i *Interpreter) VisitForLogical(l *LogicalExpr) (any, error) {
 	left, err := i.evaluate(l.Left)
 	if err != nil {
 		return nil, err
@@ -162,7 +163,7 @@ func (i *Interpreter) VisitForLogical(l LogicalExpr) (any, error) {
 	return i.evaluate(l.Right)
 }
 
-func (i *Interpreter) VisitForWhile(w WhileStmt) (any, error) {
+func (i *Interpreter) VisitForWhile(w *WhileStmt) (any, error) {
 	for {
 		condition, err := i.evaluate(w.Condition)
 		if err != nil {
@@ -178,7 +179,7 @@ func (i *Interpreter) VisitForWhile(w WhileStmt) (any, error) {
 	}
 }
 
-func (i *Interpreter) VisitForPrint(p PrintStmt) (any, error) {
+func (i *Interpreter) VisitForPrint(p *PrintStmt) (any, error) {
 	v, err := i.evaluate(p.Expression)
 	if err != nil {
 		return nil, err
@@ -188,11 +189,11 @@ func (i *Interpreter) VisitForPrint(p PrintStmt) (any, error) {
 	return nil, nil
 }
 
-func (i *Interpreter) VisitForBlock(b BlockStmt) (any, error) {
+func (i *Interpreter) VisitForBlock(b *BlockStmt) (any, error) {
 	return nil, i.executeBlock(b.Statements, environment.New(i.env))
 }
 
-func (i *Interpreter) VisitForVar(v VarStmt) (any, error) {
+func (i *Interpreter) VisitForVar(v *VarStmt) (any, error) {
 	var value any
 	if v.Initializer != nil {
 		v, err := i.evaluate(v.Initializer)
@@ -205,30 +206,34 @@ func (i *Interpreter) VisitForVar(v VarStmt) (any, error) {
 	return nil, nil
 }
 
-func (i *Interpreter) VisitForVariable(v VariableExpr) (any, error) {
-	return i.env.Get(v.Name)
+func (i *Interpreter) VisitForVariable(v *VariableExpr) (any, error) {
+	return i.lookUpVariable(v.Name, v)
 }
 
-func (i *Interpreter) VisitForAssign(a AssignExpr) (any, error) {
+func (i *Interpreter) VisitForAssign(a *AssignExpr) (any, error) {
 	value, err := i.evaluate(a.Value)
 	if err != nil {
 		return nil, err
 	}
-	if err := i.env.Assign(a.Name, value); err != nil {
-		return nil, err
+	distance, exits := i.locals[a]
+	if !exits {
+		if err := i.globals.Assign(a.Name, value); err != nil {
+			return nil, err
+		}
 	}
+	i.env.AssignAt(distance, a.Name, value)
 	return value, nil
 }
 
-func (i *Interpreter) VisitForGrouping(grouping GroupingExpr) (any, error) {
+func (i *Interpreter) VisitForGrouping(grouping *GroupingExpr) (any, error) {
 	return i.evaluate(grouping.Expression)
 }
 
-func (i *Interpreter) VisitForLiteral(literal LiteralExpr) (any, error) {
+func (i *Interpreter) VisitForLiteral(literal *LiteralExpr) (any, error) {
 	return literal.Value, nil
 }
 
-func (i *Interpreter) VisitForBinary(binary BinaryExpr) (any, error) {
+func (i *Interpreter) VisitForBinary(binary *BinaryExpr) (any, error) {
 	left, err := i.evaluate(binary.Left)
 	if err != nil {
 		return nil, err
@@ -266,7 +271,7 @@ func (i *Interpreter) VisitForBinary(binary BinaryExpr) (any, error) {
 	return nil, nil // unreachable
 }
 
-func (i *Interpreter) VisitForUnary(unary UnaryExpr) (any, error) {
+func (i *Interpreter) VisitForUnary(unary *UnaryExpr) (any, error) {
 	right, err := i.evaluate(unary.Right)
 	if err != nil {
 		return nil, err
@@ -287,6 +292,18 @@ func (i *Interpreter) VisitForUnary(unary UnaryExpr) (any, error) {
 
 func (i *Interpreter) evaluate(expression Expr) (any, error) {
 	return expression.Accept(i)
+}
+
+func (i *Interpreter) Resolve(expression Expr, dept int) {
+	i.locals[expression] = dept
+}
+
+func (i *Interpreter) lookUpVariable(name tokens.Token, expression Expr) (any, error) {
+	distance, exists := i.locals[expression]
+	if !exists {
+		return i.globals.Get(name)
+	}
+	return i.env.GetAt(distance, name.Lexeme), nil
 }
 
 // asNumber returns the number representation of the provided value or an error

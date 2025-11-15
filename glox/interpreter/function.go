@@ -6,7 +6,7 @@ import (
 )
 
 type LoxFunction struct {
-	Declaration FunctionStmt
+	Declaration *FunctionStmt
 	Closure     *environment.Environment
 }
 

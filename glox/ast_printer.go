@@ -10,42 +10,42 @@ import (
 
 type AstPrinter struct{}
 
-func (p AstPrinter) Print(e expr.Expr[string]) (string, error) {
+func (p *AstPrinter) Print(e expr.Expr[string]) (string, error) {
 	return e.Accept(p)
 }
 
-func (p AstPrinter) VisitForBinary(e expr.Binary[string]) (string, error) {
+func (p AstPrinter) VisitForBinary(e *expr.Binary[string]) (string, error) {
 	return p.parenthesize(e.Operator.Lexeme, e.Left, e.Right)
 }
 
-func (p AstPrinter) VisitForGrouping(e expr.Grouping[string]) (string, error) {
+func (p AstPrinter) VisitForGrouping(e *expr.Grouping[string]) (string, error) {
 	return p.parenthesize("group", e.Expression)
 }
 
-func (p AstPrinter) VisitForLiteral(e expr.Literal[string]) (string, error) {
+func (p AstPrinter) VisitForLiteral(e *expr.Literal[string]) (string, error) {
 	if e.Value == tokens.NilLiteral {
 		return "nil", nil
 	}
 	return format(e.Value), nil
 }
 
-func (p AstPrinter) VisitForUnary(e expr.Unary[string]) (string, error) {
+func (p AstPrinter) VisitForUnary(e *expr.Unary[string]) (string, error) {
 	return p.parenthesize(e.Operator.Lexeme, e.Right)
 }
 
-func (p AstPrinter) VisitForVariable(e expr.Variable[string]) (string, error) {
+func (p AstPrinter) VisitForVariable(e *expr.Variable[string]) (string, error) {
 	panic("Not implemented")
 }
 
-func (p AstPrinter) VisitForAssign(e expr.Assign[string]) (string, error) {
+func (p AstPrinter) VisitForAssign(e *expr.Assign[string]) (string, error) {
 	panic("Not implemented")
 }
 
-func (p AstPrinter) VisitForLogical(e expr.Logical[string]) (string, error) {
+func (p AstPrinter) VisitForLogical(e *expr.Logical[string]) (string, error) {
 	panic("Not implemented")
 }
 
-func (p AstPrinter) VisitForCall(e expr.Call[string]) (string, error) {
+func (p AstPrinter) VisitForCall(e *expr.Call[string]) (string, error) {
 	panic("Not implemented")
 }
 
