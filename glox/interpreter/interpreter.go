@@ -40,7 +40,7 @@ type Interpreter struct {
 func New() Interpreter {
 	env := environment.New(nil)
 	env.Define("clock", &clock{})
-	return Interpreter{env: environment.New(nil), globals: env}
+	return Interpreter{env: env, globals: env}
 }
 
 func (i *Interpreter) Interpret(statements []Stmt) {
