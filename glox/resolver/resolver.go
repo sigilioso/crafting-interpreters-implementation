@@ -12,10 +12,11 @@ type Resolver struct {
 	Interpreter         *interpreter.Interpreter
 	scopes              Stack[map[string]bool]
 	currentFunctionType FunctionType
+	currentClassType    ClassType
 }
 
 func NewResolver(i *interpreter.Interpreter) Resolver {
-	return Resolver{Interpreter: i, scopes: Stack[map[string]bool]{}, currentFunctionType: FunctionTypeNone}
+	return Resolver{Interpreter: i, scopes: Stack[map[string]bool]{}, currentFunctionType: FunctionTypeNone, currentClassType: ClassTypeNone}
 }
 
 func (r *Resolver) VisitForBlock(s *stmt.Block[any]) (any, error) {
@@ -65,6 +66,9 @@ func (r *Resolver) VisitForReturn(s *stmt.Return[any]) (any, error) {
 		errors.AtToken(s.Keyword, "Can't return from top-level code.")
 		return nil, nil
 	}
+	if s.Value != nil && r.currentFunctionType == FunctionTypeInitializer {
+		errors.AtToken(s.Keyword, "Can't return a value from an initializer.")
+	}
 	if s.Value != nil {
 		return nil, r.resolveExpr(s.Value)
 	}
@@ -89,6 +93,53 @@ func (r *Resolver) VisitForWhile(s *stmt.While[any]) (any, error) {
 	if err := r.resolveStmt(s.Body); err != nil {
 		return nil, err
 	}
+	return nil, nil
+}
+
+func (r *Resolver) VisitForGet(g *expr.Get[any]) (any, error) {
+	return nil, r.resolveExpr(g.Object)
+}
+
+func (r *Resolver) VisitForSet(s *expr.Set[any]) (any, error) {
+	if err := r.resolveExpr(s.Value); err != nil {
+		return nil, err
+	}
+	if err := r.resolveExpr(s.Object); err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (r *Resolver) VisitForClass(c *stmt.Class[any]) (any, error) {
+	enclosingClassType := r.currentClassType
+	r.currentClassType = ClassTypeClass
+	r.declare(c.Name)
+	r.define(c.Name)
+
+	r.beginScope()
+	scope := r.scopes.Peek()
+	scope["this"] = true
+
+	for _, method := range c.Methods {
+		declaration := FunctionTypeMethod
+		if method.Name.Lexeme == "init" {
+			declaration = FunctionTypeInitializer
+		}
+		if err := r.resolveFunction(method, declaration); err != nil {
+			return nil, nil
+		}
+	}
+	r.endScope()
+	r.currentClassType = enclosingClassType
+	return nil, nil
+}
+
+func (r *Resolver) VisitForThis(t *expr.This[any]) (any, error) {
+	if r.currentClassType == ClassTypeNone {
+		errors.AtToken(t.Keyword, "Can't use 'this' outside of a class.")
+		return nil, nil
+	}
+	r.resolveLocal(t, t.Keyword)
 	return nil, nil
 }
 

@@ -13,9 +13,12 @@ func main() {
 		"Assign	  : Name tokens.Token, Value Expr[T]",
 		"Binary   : Left Expr[T], Operator tokens.Token, Right Expr[T]",
 		"Call     : Callee Expr[T], Paren tokens.Token, Arguments []Expr[T]",
+		"Get	  : Object Expr[T], Name tokens.Token",
 		"Grouping : Expression Expr[T]",
 		"Literal  : Value any",
 		"Unary    : Operator tokens.Token, Right Expr[T]",
+		"Set	  : Object Expr[T], Name tokens.Token, Value Expr[T]",
+		"This	  : Keyword tokens.Token",
 		"Logical  : Left Expr[T], Operator tokens.Token, Right Expr[T]",
 		"Variable : Name tokens.Token",
 	}
@@ -23,7 +26,7 @@ func main() {
 
 	types_stmt := []string{
 		"Block		: Statements []Stmt[T]",
-		//"Class		: Name tokens.Token, Methods []Function[T]",
+		"Class		: Name tokens.Token, Methods []*Function[T]",
 		"Expression	: Expression expr.Expr[T]",
 		"Function   : Name tokens.Token, Params []tokens.Token, Body []Stmt[T]",
 		"If			: Condition expr.Expr[T], ThenBranch Stmt[T], ElseBranch Stmt[T]",

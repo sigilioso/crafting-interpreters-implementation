@@ -18,6 +18,15 @@ func (e *Block[T]) Accept(v Visitor[T]) (T, error) {
 	return v.VisitForBlock(e)
 }
 
+type Class[T any] struct {
+	Name    tokens.Token
+	Methods []*Function[T]
+}
+
+func (e *Class[T]) Accept(v Visitor[T]) (T, error) {
+	return v.VisitForClass(e)
+}
+
 type Expression[T any] struct {
 	Expression expr.Expr[T]
 }
@@ -83,6 +92,7 @@ func (e *While[T]) Accept(v Visitor[T]) (T, error) {
 
 type Visitor[T any] interface {
 	VisitForBlock(*Block[T]) (T, error)
+	VisitForClass(*Class[T]) (T, error)
 	VisitForExpression(*Expression[T]) (T, error)
 	VisitForFunction(*Function[T]) (T, error)
 	VisitForIf(*If[T]) (T, error)

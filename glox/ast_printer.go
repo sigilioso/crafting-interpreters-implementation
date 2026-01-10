@@ -14,6 +14,18 @@ func (p *AstPrinter) Print(e expr.Expr[string]) (string, error) {
 	return e.Accept(p)
 }
 
+func (p AstPrinter) VisitForThis(t *expr.This[string]) (string, error) {
+	panic("Not implemented")
+}
+
+func (p AstPrinter) VisitForGet(e *expr.Get[string]) (string, error) {
+	panic("Not implemented")
+}
+
+func (p AstPrinter) VisitForSet(e *expr.Set[string]) (string, error) {
+	panic("Not implemented")
+}
+
 func (p AstPrinter) VisitForBinary(e *expr.Binary[string]) (string, error) {
 	return p.parenthesize(e.Operator.Lexeme, e.Left, e.Right)
 }

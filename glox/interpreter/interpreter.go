@@ -18,6 +18,9 @@ type UnaryExpr = expr.Unary[any]
 type LogicalExpr = expr.Logical[any]
 type GroupingExpr = expr.Grouping[any]
 type VariableExpr = expr.Variable[any]
+type GetExpr = expr.Get[any]
+type SetExpr = expr.Set[any]
+type ThisExpr = expr.This[any]
 type AssignExpr = expr.Assign[any]
 type ExprVisitor = expr.Visitor[any]
 
@@ -29,6 +32,7 @@ type IfStmt = stmt.If[any]
 type VarStmt = stmt.Var[any]
 type ReturnStmt = stmt.Return[any]
 type BlockStmt = stmt.Block[any]
+type ClassStmt = stmt.Class[any]
 type WhileStmt = stmt.While[any]
 type StmtVisitor = stmt.Visitor[any]
 
@@ -114,7 +118,7 @@ func (i *Interpreter) VisitForExpression(e *ExpressionStmt) (any, error) {
 }
 
 func (i *Interpreter) VisitForFunction(f *FunctionStmt) (any, error) {
-	function := LoxFunction{Declaration: f, Closure: i.env}
+	function := LoxFunction{Declaration: f, Closure: i.env, IsInitializer: false}
 	i.env.Define(f.Name.Lexeme, &function)
 	return nil, nil
 }
@@ -193,6 +197,31 @@ func (i *Interpreter) VisitForBlock(b *BlockStmt) (any, error) {
 	return nil, i.executeBlock(b.Statements, environment.New(i.env))
 }
 
+func (i *Interpreter) VisitForClass(c *ClassStmt) (any, error) {
+	i.env.Define(c.Name.Lexeme, nil)
+
+	methods := map[string]*LoxFunction{}
+	for _, method := range c.Methods {
+		isInitializer := false
+		if method.Name.Lexeme == "init" {
+			isInitializer = true
+		}
+		f := &LoxFunction{Declaration: method, Closure: i.env, IsInitializer: isInitializer}
+		methods[method.Name.Lexeme] = f
+	}
+
+	class := &LoxClass{Name: c.Name.Lexeme, Methods: methods}
+
+	if err := i.env.Assign(c.Name, class); err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (i *Interpreter) VisitForThis(t *ThisExpr) (any, error) {
+	return i.lookUpVariable(t.Keyword, t)
+}
+
 func (i *Interpreter) VisitForVar(v *VarStmt) (any, error) {
 	var value any
 	if v.Initializer != nil {
@@ -204,6 +233,33 @@ func (i *Interpreter) VisitForVar(v *VarStmt) (any, error) {
 	}
 	i.env.Define(v.Name.Lexeme, value)
 	return nil, nil
+}
+
+func (i *Interpreter) VisitForGet(g *GetExpr) (any, error) {
+	object, err := i.evaluate(g.Object)
+	if err != nil {
+		return nil, err
+	}
+	if loxInstance, isInstance := object.(*LoxInstance); isInstance {
+		return loxInstance.Get(g.Name)
+	}
+	return nil, errors.NewRuntimeError(g.Name, "Only instances have properties.")
+}
+
+func (i *Interpreter) VisitForSet(s *SetExpr) (any, error) {
+	object, err := i.evaluate(s.Object)
+	if err != nil {
+		return nil, err
+	}
+	if loxInstance, isInstance := object.(*LoxInstance); isInstance {
+		value, err := i.evaluate(s.Value)
+		if err != nil {
+			return nil, err
+		}
+		loxInstance.Set(s.Name, value)
+		return value, nil
+	}
+	return nil, errors.NewRuntimeError(s.Name, "Only instances have fields.")
 }
 
 func (i *Interpreter) VisitForVariable(v *VariableExpr) (any, error) {

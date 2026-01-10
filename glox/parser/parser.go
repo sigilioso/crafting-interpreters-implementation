@@ -38,6 +38,15 @@ func (p *Parser[T]) declaration() stmt.Stmt[T] {
 	// Get a regular statement if no other declaration matches
 	statementGetter := p.statement
 
+	if p.match(tokens.Class) {
+		stmt, err := p.classDeclaration()
+		if err != nil {
+			gloxErrors.AtToken(p.previous(), fmt.Sprintf("%s", err))
+			return nil
+		}
+		return stmt
+	}
+
 	if p.match(tokens.Fun) {
 		statementGetter = func() (stmt.Stmt[T], error) {
 			return p.function("function")
@@ -53,6 +62,31 @@ func (p *Parser[T]) declaration() stmt.Stmt[T] {
 		return nil
 	}
 	return statement
+}
+
+func (p *Parser[T]) classDeclaration() (stmt.Stmt[T], error) {
+	name, err := p.consume(tokens.Identifier, "Expect class name.")
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.consume(tokens.LeftBrace, "Expect '{' before class body.")
+	if err != nil {
+		return nil, err
+	}
+	methods := []*stmt.Function[T]{}
+	for !p.check(tokens.RightBrace) && !p.isAtEnd() {
+		f, err := p.function("method")
+		if err != nil {
+			return nil, err
+		}
+		methods = append(methods, f)
+	}
+	_, err = p.consume(tokens.RightBrace, "Expect '}' after class body.")
+	if err != nil {
+		return nil, err
+	}
+	return &stmt.Class[T]{Name: name, Methods: methods}, nil
+
 }
 
 func (p *Parser[T]) varDeclaration() (stmt.Stmt[T], error) {
@@ -326,6 +360,8 @@ func (p *Parser[T]) assignment() (expr.Expr[T], error) {
 		if expVar, isVariable := expression.(*expr.Variable[T]); isVariable {
 			name := expVar.Name
 			return &expr.Assign[T]{Name: name, Value: value}, nil
+		} else if getExpr, isGet := expression.(*expr.Get[T]); isGet {
+			return &expr.Set[T]{Name: getExpr.Name, Object: getExpr.Object, Value: value}, nil
 		}
 		return nil, parseError(equals, "Invalid assignment target.")
 	}
@@ -434,6 +470,12 @@ func (p *Parser[T]) call() (expr.Expr[T], error) {
 				return nil, err
 			}
 
+		} else if p.match(tokens.Dot) {
+			name, err := p.consume(tokens.Identifier, "Expect property name after '.'.")
+			if err != nil {
+				return nil, err
+			}
+			expression = &expr.Get[T]{Name: name, Object: expression}
 		} else {
 			break
 		}
@@ -480,6 +522,8 @@ func (p *Parser[T]) primary() (expr.Expr[T], error) {
 		return &expr.Literal[T]{Value: tokens.NilLiteral}, nil
 	case p.match(tokens.Number, tokens.String):
 		return &expr.Literal[T]{Value: p.previous().Literal}, nil
+	case p.match(tokens.This):
+		return &expr.This[T]{Keyword: p.previous()}, nil
 	case p.match(tokens.LeftParen):
 		expression, err := p.Expression()
 		if err != nil {
