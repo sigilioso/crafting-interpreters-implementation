@@ -23,6 +23,7 @@ func main() {
 
 	types_stmt := []string{
 		"Block		: Statements []Stmt[T]",
+		//"Class		: Name tokens.Token, Methods []Function[T]",
 		"Expression	: Expression expr.Expr[T]",
 		"Function   : Name tokens.Token, Params []tokens.Token, Body []Stmt[T]",
 		"If			: Condition expr.Expr[T], ThenBranch Stmt[T], ElseBranch Stmt[T]",
@@ -82,7 +83,7 @@ func defineType(code *strings.Builder, typeDef string) {
 	}
 	fmt.Fprintln(code, "}")
 	fmt.Fprintln(code)
-	fmt.Fprintf(code, "func (e %s[T]) Accept(v Visitor[T]) (T, error) {\n", name)
+	fmt.Fprintf(code, "func (e *%s[T]) Accept(v Visitor[T]) (T, error) {\n", name)
 	fmt.Fprintf(code, "return v.VisitFor%s(e)\n", name)
 	fmt.Fprintln(code, "}")
 
@@ -96,7 +97,7 @@ func defineVisitor(code *strings.Builder, types []string) {
 	for _, typeDef := range types {
 		chunks := strings.Split(typeDef, ":")
 		typeName := strings.TrimSpace(chunks[0])
-		fmt.Fprintf(code, "VisitFor%s(%s[T]) (T, error)\n", typeName, typeName)
+		fmt.Fprintf(code, "VisitFor%s(*%s[T]) (T, error)\n", typeName, typeName)
 	}
 	fmt.Fprintln(code, "}")
 	fmt.Fprintln(code)
