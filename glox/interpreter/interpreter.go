@@ -20,6 +20,7 @@ type GroupingExpr = expr.Grouping[any]
 type VariableExpr = expr.Variable[any]
 type GetExpr = expr.Get[any]
 type SetExpr = expr.Set[any]
+type SuperExpr = expr.Super[any]
 type ThisExpr = expr.This[any]
 type AssignExpr = expr.Assign[any]
 type ExprVisitor = expr.Visitor[any]
@@ -200,6 +201,19 @@ func (i *Interpreter) VisitForBlock(b *BlockStmt) (any, error) {
 func (i *Interpreter) VisitForClass(c *ClassStmt) (any, error) {
 	i.env.Define(c.Name.Lexeme, nil)
 
+	var superClass *LoxClass
+	if c.SuperClass != nil {
+		s, err := i.evaluate(c.SuperClass)
+		if err != nil {
+			return nil, err
+		}
+		asLoxClass, isLoxClass := s.(*LoxClass)
+		if !isLoxClass {
+			return nil, errors.NewRuntimeError(c.SuperClass.Name, "Superclass must be a class.")
+		}
+		superClass = asLoxClass
+	}
+
 	methods := map[string]*LoxFunction{}
 	for _, method := range c.Methods {
 		isInitializer := false
@@ -210,12 +224,16 @@ func (i *Interpreter) VisitForClass(c *ClassStmt) (any, error) {
 		methods[method.Name.Lexeme] = f
 	}
 
-	class := &LoxClass{Name: c.Name.Lexeme, Methods: methods}
+	class := &LoxClass{Name: c.Name.Lexeme, Superclass: superClass, Methods: methods}
 
 	if err := i.env.Assign(c.Name, class); err != nil {
 		return nil, err
 	}
 	return nil, nil
+}
+
+func (i *Interpreter) VisitForSuper(t *SuperExpr) (any, error) {
+	panic("Not implemented")
 }
 
 func (i *Interpreter) VisitForThis(t *ThisExpr) (any, error) {

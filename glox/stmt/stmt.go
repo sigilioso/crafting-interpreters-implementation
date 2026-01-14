@@ -19,8 +19,9 @@ func (e *Block[T]) Accept(v Visitor[T]) (T, error) {
 }
 
 type Class[T any] struct {
-	Name    tokens.Token
-	Methods []*Function[T]
+	Name       tokens.Token
+	SuperClass *expr.Variable[T]
+	Methods    []*Function[T]
 }
 
 func (e *Class[T]) Accept(v Visitor[T]) (T, error) {

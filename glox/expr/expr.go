@@ -80,6 +80,15 @@ func (e *Set[T]) Accept(v Visitor[T]) (T, error) {
 	return v.VisitForSet(e)
 }
 
+type Super[T any] struct {
+	Keyword tokens.Token
+	Method  tokens.Token
+}
+
+func (e *Super[T]) Accept(v Visitor[T]) (T, error) {
+	return v.VisitForSuper(e)
+}
+
 type This[T any] struct {
 	Keyword tokens.Token
 }
@@ -115,6 +124,7 @@ type Visitor[T any] interface {
 	VisitForLiteral(*Literal[T]) (T, error)
 	VisitForUnary(*Unary[T]) (T, error)
 	VisitForSet(*Set[T]) (T, error)
+	VisitForSuper(*Super[T]) (T, error)
 	VisitForThis(*This[T]) (T, error)
 	VisitForLogical(*Logical[T]) (T, error)
 	VisitForVariable(*Variable[T]) (T, error)

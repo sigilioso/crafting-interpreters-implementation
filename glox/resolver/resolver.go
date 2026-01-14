@@ -116,6 +116,15 @@ func (r *Resolver) VisitForClass(c *stmt.Class[any]) (any, error) {
 	r.declare(c.Name)
 	r.define(c.Name)
 
+	if c.SuperClass != nil {
+		if c.SuperClass.Name == c.Name {
+			errors.AtToken(c.SuperClass.Name, "A class can't inherit from itself")
+		}
+		if err := r.resolveExpr(c.SuperClass); err != nil {
+			return nil, err
+		}
+	}
+
 	r.beginScope()
 	scope := r.scopes.Peek()
 	scope["this"] = true
@@ -132,6 +141,10 @@ func (r *Resolver) VisitForClass(c *stmt.Class[any]) (any, error) {
 	r.endScope()
 	r.currentClassType = enclosingClassType
 	return nil, nil
+}
+
+func (r *Resolver) VisitForSuper(t *expr.Super[any]) (any, error) {
+	panic("Not implemented")
 }
 
 func (r *Resolver) VisitForThis(t *expr.This[any]) (any, error) {

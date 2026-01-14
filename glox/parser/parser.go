@@ -69,6 +69,16 @@ func (p *Parser[T]) classDeclaration() (stmt.Stmt[T], error) {
 	if err != nil {
 		return nil, err
 	}
+
+	var superClass *expr.Variable[T]
+	if p.match(tokens.Less) {
+		name, err := p.consume(tokens.Identifier, "Expect superclass name.")
+		if err != nil {
+			return nil, err
+		}
+		superClass = &expr.Variable[T]{Name: name}
+	}
+
 	_, err = p.consume(tokens.LeftBrace, "Expect '{' before class body.")
 	if err != nil {
 		return nil, err
@@ -85,7 +95,7 @@ func (p *Parser[T]) classDeclaration() (stmt.Stmt[T], error) {
 	if err != nil {
 		return nil, err
 	}
-	return &stmt.Class[T]{Name: name, Methods: methods}, nil
+	return &stmt.Class[T]{Name: name, SuperClass: superClass, Methods: methods}, nil
 
 }
 
@@ -524,6 +534,16 @@ func (p *Parser[T]) primary() (expr.Expr[T], error) {
 		return &expr.Literal[T]{Value: p.previous().Literal}, nil
 	case p.match(tokens.This):
 		return &expr.This[T]{Keyword: p.previous()}, nil
+	case p.match(tokens.Super):
+		previous := p.previous()
+		if _, err := p.consume(tokens.Dot, "Expect '.' after 'super'."); err != nil {
+			return nil, err
+		}
+		if _, err := p.consume(tokens.Identifier, "Expect superclass method name."); err != nil {
+			return nil, err
+		}
+		return &expr.Super[T]{Keyword: previous}, nil
+	case p.match(tokens.LeftParen):
 	case p.match(tokens.LeftParen):
 		expression, err := p.Expression()
 		if err != nil {

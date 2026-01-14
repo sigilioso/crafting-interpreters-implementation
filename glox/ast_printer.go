@@ -18,6 +18,10 @@ func (p AstPrinter) VisitForThis(t *expr.This[string]) (string, error) {
 	panic("Not implemented")
 }
 
+func (p AstPrinter) VisitForSuper(t *expr.Super[string]) (string, error) {
+	panic("Not implemented")
+}
+
 func (p AstPrinter) VisitForGet(e *expr.Get[string]) (string, error) {
 	panic("Not implemented")
 }
