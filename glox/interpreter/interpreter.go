@@ -212,6 +212,10 @@ func (i *Interpreter) VisitForClass(c *ClassStmt) (any, error) {
 			return nil, errors.NewRuntimeError(c.SuperClass.Name, "Superclass must be a class.")
 		}
 		superClass = asLoxClass
+
+		env := environment.New(i.env)
+		env.Define("super", superClass)
+		i.env = env
 	}
 
 	methods := map[string]*LoxFunction{}
@@ -225,15 +229,14 @@ func (i *Interpreter) VisitForClass(c *ClassStmt) (any, error) {
 	}
 
 	class := &LoxClass{Name: c.Name.Lexeme, Superclass: superClass, Methods: methods}
+	if c.SuperClass != nil {
+		i.env = i.env.Enclosing
+	}
 
 	if err := i.env.Assign(c.Name, class); err != nil {
 		return nil, err
 	}
 	return nil, nil
-}
-
-func (i *Interpreter) VisitForSuper(t *SuperExpr) (any, error) {
-	panic("Not implemented")
 }
 
 func (i *Interpreter) VisitForThis(t *ThisExpr) (any, error) {
@@ -278,6 +281,18 @@ func (i *Interpreter) VisitForSet(s *SetExpr) (any, error) {
 		return value, nil
 	}
 	return nil, errors.NewRuntimeError(s.Name, "Only instances have fields.")
+}
+
+func (i *Interpreter) VisitForSuper(s *SuperExpr) (any, error) {
+	distance := i.locals[s]
+	// TODO: check panic ./examples/superclass.glox
+	superclass := i.env.GetAt(distance, "super").(*LoxClass)
+	object := i.env.GetAt(distance-1, "this").(*LoxInstance)
+	method := superclass.FindMethod(s.Method.Lexeme)
+	if method == nil {
+		return nil, errors.NewRuntimeError(s.Method, fmt.Sprintf("Undefined property '%s'.", s.Method.Lexeme))
+	}
+	return method.Bind(object), nil
 }
 
 func (i *Interpreter) VisitForVariable(v *VariableExpr) (any, error) {
