@@ -539,11 +539,11 @@ func (p *Parser[T]) primary() (expr.Expr[T], error) {
 		if _, err := p.consume(tokens.Dot, "Expect '.' after 'super'."); err != nil {
 			return nil, err
 		}
-		if _, err := p.consume(tokens.Identifier, "Expect superclass method name."); err != nil {
+		method, err := p.consume(tokens.Identifier, "Expect superclass method name.")
+		if err != nil {
 			return nil, err
 		}
-		return &expr.Super[T]{Keyword: previous}, nil
-	case p.match(tokens.LeftParen):
+		return &expr.Super[T]{Keyword: previous, Method: method}, nil
 	case p.match(tokens.LeftParen):
 		expression, err := p.Expression()
 		if err != nil {

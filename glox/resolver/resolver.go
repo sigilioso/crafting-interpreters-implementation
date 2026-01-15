@@ -118,9 +118,11 @@ func (r *Resolver) VisitForClass(c *stmt.Class[any]) (any, error) {
 
 	if c.SuperClass != nil {
 		r.beginScope()
+		r.scopes.Peek()["super"] = true
 		if c.SuperClass.Name == c.Name {
-			errors.AtToken(c.SuperClass.Name, "A class can't inherit from itself")
+			errors.AtToken(c.SuperClass.Name, "A class can't inherit from itself.")
 		}
+		r.currentClassType = ClassTypeSubclass
 		if err := r.resolveExpr(c.SuperClass); err != nil {
 			return nil, err
 		}
@@ -148,6 +150,14 @@ func (r *Resolver) VisitForClass(c *stmt.Class[any]) (any, error) {
 }
 
 func (r *Resolver) VisitForSuper(t *expr.Super[any]) (any, error) {
+	if r.currentClassType == ClassTypeNone {
+		errors.AtToken(t.Keyword, "Can't use 'super' outside of a class.")
+		return nil, nil
+	}
+	if r.currentClassType != ClassTypeSubclass {
+		errors.AtToken(t.Keyword, "Can't use 'super' in a class with no superclass.")
+		return nil, nil
+	}
 	r.resolveLocal(t, t.Keyword)
 	return nil, nil
 }
