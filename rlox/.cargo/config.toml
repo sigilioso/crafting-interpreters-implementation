@@ -1,0 +1,4 @@
+[alias]
+# Use 'cargo rel' instead of 'cargo build --release'
+# Requires `rustup target add x86_64-unknown-linux-musl`
+rel = "build --release --target x86_64-unknown-linux-musl"
