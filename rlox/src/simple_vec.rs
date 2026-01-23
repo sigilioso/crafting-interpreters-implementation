@@ -47,7 +47,6 @@ impl<T> SimpleVec<T> {
         }
     }
 
-    #[allow(dead_code)] // TODO
     pub fn get_ref(&self, offset: usize) -> &T {
         unsafe { &*self.ptr.add(offset) }
     }
