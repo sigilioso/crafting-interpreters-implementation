@@ -22,6 +22,20 @@ impl<T> SimpleVec<T> {
         }
     }
 
+    pub fn with_initial_capacity(capacity: usize) -> Self {
+        let mut v = Self::new();
+        let layout = Layout::array::<T>(capacity).expect("failure reserving memory");
+        let ptr = unsafe { alloc(layout) } as *mut T;
+        if ptr.is_null() {
+            handle_alloc_error(layout);
+        }
+        Self {
+            ptr,
+            capacity,
+            count: 0,
+        }
+    }
+
     pub fn count(&self) -> usize {
         self.count
     }
@@ -124,6 +138,11 @@ mod tests {
         let mut v = SimpleVec::<Value>::new();
         v.push(Value::Number(1.2));
         assert!(matches!(v.pop(), Some(Value::Number(n)) if n == 1.2));
-        assert_eq!(v.count(), 0)
+        assert_eq!(v.count(), 0);
+
+        let mut v = SimpleVec::<i64>::with_initial_capacity(32);
+        v.push(10);
+        assert_eq!(v.get_value(0), 10);
+        assert_eq!(v.capacity, 32);
     }
 }
