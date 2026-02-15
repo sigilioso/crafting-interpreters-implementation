@@ -1,8 +1,12 @@
 mod chunk;
+mod compiler;
 mod operation;
+mod scanner;
 mod simple_vec;
 mod value;
 mod vm;
+
+use std::{fs::read_to_string, io::stdin, process::exit};
 
 use chunk::Chunk;
 use operation::Operation;
@@ -36,4 +40,28 @@ fn main() {
     c.disassemble("test chunk");
 
     let _ = vm.interpret(&c);
+}
+
+fn repl() {
+    loop {
+        print!("> ");
+        let mut line = String::new();
+        stdin().read_line(&mut line).unwrap_or_else(|err| {
+            eprintln!("error reading input: {err}");
+            exit(74);
+        });
+        interpret(line);
+    }
+}
+
+fn run_file(path: &str) {
+    let source = read_to_string(path).unwrap_or_else(|err| {
+        eprintln!("Could not read file '{path}': {err}");
+        exit(74);
+    });
+    interpret(source);
+}
+
+fn interpret(source: String) {
+    todo!("to be implemented in the VM")
 }
