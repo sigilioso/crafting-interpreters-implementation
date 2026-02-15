@@ -7,14 +7,13 @@ pub enum InterpretError {
     RuntimeError,
 }
 
-type InterpretResult = Result<(), InterpretError>;
+pub type InterpretResult = Result<(), InterpretError>;
 
 pub struct VM {
     stack: [Value; STACK_MAX],
     stack_top: usize,
 }
 
-// TODO: impl drop when needed
 impl VM {
     pub fn new() -> Self {
         Self {
