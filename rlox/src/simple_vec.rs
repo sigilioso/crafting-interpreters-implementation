@@ -1,5 +1,6 @@
 use std::{
     alloc::{Layout, alloc, dealloc, handle_alloc_error, realloc},
+    ops::Index,
     ptr,
 };
 
@@ -61,10 +62,6 @@ impl<T> SimpleVec<T> {
         }
     }
 
-    pub fn get_ref(&self, offset: usize) -> &T {
-        unsafe { &*self.ptr.add(offset) }
-    }
-
     fn grow_capacity(&self) -> usize {
         if self.capacity == 0 {
             8
@@ -100,15 +97,17 @@ impl<T> SimpleVec<T> {
     }
 }
 
-impl<T: Copy> SimpleVec<T> {
-    pub fn get_value(&self, offset: usize) -> T {
-        unsafe { *self.ptr.add(offset) }
-    }
-}
-
 impl<T> Drop for SimpleVec<T> {
     fn drop(&mut self) {
         self.dealloc();
+    }
+}
+
+impl<T> Index<usize> for SimpleVec<T> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        unsafe { &*self.ptr.add(index) }
     }
 }
 
@@ -128,12 +127,12 @@ mod tests {
         assert_eq!(v.capacity, 16);
 
         for i in 0..9 {
-            assert_eq!(v.get_ref(i).clone(), format!("{}", i + 1));
+            assert_eq!(v[i].clone(), format!("{}", i + 1));
         }
 
         let mut v = SimpleVec::<i64>::new();
         v.push(10);
-        assert_eq!(v.get_value(0), 10);
+        assert_eq!(v[0], 10);
 
         let mut v = SimpleVec::<Value>::new();
         v.push(Value::Number(1.2));
@@ -142,7 +141,7 @@ mod tests {
 
         let mut v = SimpleVec::<i64>::with_initial_capacity(32);
         v.push(10);
-        assert_eq!(v.get_value(0), 10);
+        assert_eq!(v[0], 10);
         assert_eq!(v.capacity, 32);
     }
 }

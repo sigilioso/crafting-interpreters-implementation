@@ -28,10 +28,10 @@ impl Chunk {
     }
 
     pub fn instruction(&self, ip: usize) -> u8 {
-        self.code.get_value(ip)
+        self.code[ip]
     }
 
     pub fn constant(&self, ip: usize) -> Value {
-        self.constants.get_value(ip)
+        self.constants[ip]
     }
 }

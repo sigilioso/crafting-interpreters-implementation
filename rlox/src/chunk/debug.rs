@@ -13,11 +13,11 @@ impl Chunk {
 
     pub fn disassemble_instruction(&self, offset: usize) -> usize {
         print!("{offset:04} ");
-        let op = self.code.get_value(offset);
-        if offset > 0 && self.lines.get_value(offset) == self.lines.get_value(offset - 1) {
+        let op = self.code[offset];
+        if offset > 0 && self.lines[offset] == self.lines[offset - 1] {
             print!("   | ")
         } else {
-            print!("{:>4} ", self.lines.get_value(offset))
+            print!("{:>4} ", self.lines[offset])
         }
         let Ok(op) = Operation::try_from(op).inspect_err(|err| {
             println!("Unknown opcode {op}");
@@ -36,8 +36,8 @@ impl Chunk {
     }
 
     fn disassemble_constant_instruction(&self, name: &str, offset: usize) -> usize {
-        let constant_index = self.code.get_value(offset + 1);
-        let value = self.constants.get_value(constant_index.into());
+        let constant_index = self.code[offset + 1];
+        let value = self.constants[constant_index.into()];
         println!("{name:<16} {constant_index} '{value}'");
         offset + 2
     }
