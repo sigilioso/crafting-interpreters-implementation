@@ -27,11 +27,11 @@ impl Chunk {
         u8::try_from(index).expect("the number of constants in a chunk must fit in a single byte")
     }
 
-    pub fn instruction(&self, ip: usize) -> u8 {
+    pub fn instruction(&self, ip: u64) -> u8 {
         self.code[ip]
     }
 
-    pub fn constant(&self, ip: usize) -> Value {
+    pub fn constant(&self, ip: u64) -> Value {
         self.constants[ip]
     }
 }

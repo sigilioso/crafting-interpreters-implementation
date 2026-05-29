@@ -1,6 +1,6 @@
 use crate::{chunk::Chunk, operation::Operation, simple_vec::SimpleVec, value::Value};
 
-const STACK_MAX: usize = 265;
+const STACK_MAX: u64 = 265;
 
 pub enum InterpretError {
     CompileError,
@@ -11,7 +11,7 @@ pub type InterpretResult = Result<(), InterpretError>;
 
 pub struct VM {
     stack: [Value; STACK_MAX],
-    stack_top: usize,
+    stack_top: u64,
 }
 
 impl VM {
@@ -23,11 +23,11 @@ impl VM {
     }
 
     pub fn interpret(&mut self, c: &Chunk) -> InterpretResult {
-        let ip: usize = 0;
+        let ip: u64 = 0;
         self.run(c, ip)
     }
 
-    pub fn run(&mut self, c: &Chunk, ip: usize) -> InterpretResult {
+    pub fn run(&mut self, c: &Chunk, ip: u64) -> InterpretResult {
         let mut ip = ip;
         loop {
             if debug_stack_trace() {
@@ -42,7 +42,7 @@ impl VM {
                 Operation::Constant => {
                     let index = c.instruction(ip + 1);
                     ip += 1;
-                    let value = c.constant(index as usize);
+                    let value = c.constant(index as u64);
                     self.push(value);
                 }
                 Operation::Negate => {

@@ -11,7 +11,7 @@ impl Chunk {
         }
     }
 
-    pub fn disassemble_instruction(&self, offset: usize) -> usize {
+    pub fn disassemble_instruction(&self, offset: u64) -> u64 {
         print!("{offset:04} ");
         let op = self.code[offset];
         if offset > 0 && self.lines[offset] == self.lines[offset - 1] {
@@ -35,14 +35,14 @@ impl Chunk {
         }
     }
 
-    fn disassemble_constant_instruction(&self, name: &str, offset: usize) -> usize {
+    fn disassemble_constant_instruction(&self, name: &str, offset: u64) -> u64 {
         let constant_index = self.code[offset + 1];
         let value = self.constants[constant_index.into()];
         println!("{name:<16} {constant_index} '{value}'");
         offset + 2
     }
 
-    fn disassemble_simple_instruction(&self, name: &str, offset: usize) -> usize {
+    fn disassemble_simple_instruction(&self, name: &str, offset: u64) -> u64 {
         println!("{name}");
         offset + 1
     }

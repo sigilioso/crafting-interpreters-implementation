@@ -1,8 +1,8 @@
 pub struct Scanner {
     source: Vec<u8>,
-    start: usize,
-    current: usize,
-    line: usize,
+    start: u64,
+    current: u64,
+    line: u64,
 }
 
 impl Scanner {
@@ -170,8 +170,8 @@ impl Scanner {
 
     fn check_keyword(
         &self,
-        start: usize,
-        length: usize,
+        start: u64,
+        length: u64,
         rest: &[u8],
         token_type: TokenType,
     ) -> TokenType {
@@ -221,14 +221,14 @@ impl Scanner {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: Vec<u8>,
-    pub line: usize,
+    pub line: u64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TokenType {
     // Single character
     LeftParen,

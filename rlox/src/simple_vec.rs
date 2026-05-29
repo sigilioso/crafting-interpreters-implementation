@@ -6,8 +6,8 @@ use std::{
 
 pub struct SimpleVec<T> {
     ptr: *mut T,
-    capacity: usize,
-    count: usize,
+    capacity: u64,
+    count: u64,
 }
 
 impl<T> SimpleVec<T> {
@@ -23,7 +23,7 @@ impl<T> SimpleVec<T> {
         }
     }
 
-    pub fn with_initial_capacity(capacity: usize) -> Self {
+    pub fn with_initial_capacity(capacity: u64) -> Self {
         let mut v = Self::new();
         let layout = Layout::array::<T>(capacity).expect("failure reserving memory");
         let ptr = unsafe { alloc(layout) } as *mut T;
@@ -37,7 +37,7 @@ impl<T> SimpleVec<T> {
         }
     }
 
-    pub fn count(&self) -> usize {
+    pub fn count(&self) -> u64 {
         self.count
     }
 
@@ -62,7 +62,7 @@ impl<T> SimpleVec<T> {
         }
     }
 
-    fn grow_capacity(&self) -> usize {
+    fn grow_capacity(&self) -> u64 {
         if self.capacity == 0 {
             8
         } else {
@@ -103,10 +103,10 @@ impl<T> Drop for SimpleVec<T> {
     }
 }
 
-impl<T> Index<usize> for SimpleVec<T> {
+impl<T> Index<u64> for SimpleVec<T> {
     type Output = T;
 
-    fn index(&self, index: usize) -> &Self::Output {
+    fn index(&self, index: u64) -> &Self::Output {
         unsafe { &*self.ptr.add(index) }
     }
 }

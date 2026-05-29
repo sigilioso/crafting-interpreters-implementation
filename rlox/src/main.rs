@@ -69,7 +69,7 @@ fn run_file(path: &str) {
 // TODO: wire it up properly
 fn interpret(source: Vec<u8>) {
     let mut scanner = Scanner::new(source);
-    let mut line: usize = 0;
+    let mut line: u64 = 0;
     let mut first = true;
     loop {
         let token = scanner.scan_token();
